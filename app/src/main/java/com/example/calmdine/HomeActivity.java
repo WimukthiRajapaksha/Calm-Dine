@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.SensorManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -47,6 +48,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.os.Looper;
@@ -78,6 +80,10 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
     String lonTextView;
     Button btnRecommendation;
 
+    private SensorManager sensorManager;
+
+    private final int MY_PERMISSIONS_REQUEST_AUDIO = 123;
+
     FusedLocationProviderClient mFusedLocationClient;
     protected LocationManager locationManager;
 
@@ -90,6 +96,8 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 
         spinnerNoise = findViewById(R.id.spinnerNoise);
         spinnerLight = findViewById(R.id.spinnerLight);
+
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
         firebaseDatabase = FirebaseDatabase.getInstance();
         mAuth = FirebaseAuth.getInstance();
@@ -125,8 +133,29 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 //            return;
 //        }
 //        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-        AsyncTaskRunner asyncTaskRunner = new AsyncTaskRunner();
-        asyncTaskRunner.execute();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},MY_PERMISSIONS_REQUEST_AUDIO);
+        } else {
+            AsyncTaskRunner asyncTaskRunner = new AsyncTaskRunner(sensorManager);
+            asyncTaskRunner.execute();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_AUDIO: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                    initializePlayerAndStartRecording();
+                    AsyncTaskRunner asyncTaskRunner = new AsyncTaskRunner(sensorManager);
+                    asyncTaskRunner.execute();
+                } else {
+                    Toast.makeText(this, "permission denied by user", Toast.LENGTH_LONG).show();
+                }
+                return;
+            }
+        }
     }
 
     @Override
@@ -172,16 +201,6 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         ActivityCompat.requestPermissions(
                 this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_ID
         );
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_ID) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                getLastLocation();
-            }
-        }
     }
 
     @Override
@@ -238,10 +257,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         mLocationRequest.setNumUpdates(1);
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        mFusedLocationClient.requestLocationUpdates(
-                mLocationRequest, (com.google.android.gms.location.LocationCallback) mLocationCallback, Looper.myLooper()
-        );
-
+        mFusedLocationClient.requestLocationUpdates(mLocationRequest, (com.google.android.gms.location.LocationCallback) mLocationCallback, Looper.myLooper());
     }
 
     private LocationCallback mLocationCallback = new LocationCallback() {
