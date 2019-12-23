@@ -8,9 +8,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
-import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.calmdine.models.Restaurant;
 import com.google.firebase.database.DataSnapshot;
@@ -31,6 +33,7 @@ public class RecommendationActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private RestaurantAdapter restaurantAdapter;
     ArrayList<Restaurant> restaurantsList;
+    ArrayList<Restaurant> restaurantsForUi;
 
     FirebaseDatabase firebaseDatabase;
 
@@ -45,10 +48,10 @@ public class RecommendationActivity extends AppCompatActivity {
 
         firebaseDatabase = FirebaseDatabase.getInstance();
         restaurantsList = new ArrayList<>();
+        restaurantsForUi = new ArrayList<>();
 
         spinnerNoise = findViewById(R.id.spinnerNoise);
         spinnerLight = findViewById(R.id.spinnerLight);
-//        restaurantAdapter = new RestaurantAdapter()
 
         ArrayAdapter<CharSequence> adapterNoise = ArrayAdapter.createFromResource(this, R.array.noise_levels, android.R.layout.simple_spinner_item);
         ArrayAdapter<CharSequence> adapterLight = ArrayAdapter.createFromResource(this, R.array.light_levels, android.R.layout.simple_spinner_item);
@@ -66,6 +69,60 @@ public class RecommendationActivity extends AppCompatActivity {
         recyclerView.setHasFixedSize(true);
 
         loadRestaurantData();
+
+        spinnerLight.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> arg0, View arg1, int position, long arg3) {
+//                Log.i("last", String.valueOf(spinnerNoise.getCount()));
+//                Log.i("last", String.valueOf(position));
+                double noiseSpinVal;
+                double lightSpinVal;
+                if(spinnerNoise.getSelectedItemPosition()+1 != spinnerNoise.getCount()) {
+                    noiseSpinVal = Double.parseDouble(spinnerNoise.getSelectedItem().toString());
+                } else {
+                    noiseSpinVal = Double.valueOf(1000000000);
+                }
+                if(spinnerLight.getSelectedItemPosition()+1 != spinnerLight.getCount()) {
+                    lightSpinVal = Double.parseDouble(spinnerLight.getSelectedItem().toString());
+                } else {
+                    lightSpinVal = Double.valueOf(1000000000);
+                }
+                onFilterChanged(noiseSpinVal, lightSpinVal);
+                Toast.makeText(getBaseContext(), "You select " + spinnerLight.getSelectedItem(), Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> arg0) {
+            }
+
+        });
+
+        spinnerNoise.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> arg0, View arg1, int position, long arg3) {
+//                Log.i("last", String.valueOf(spinnerNoise.getSelectedItemPosition()));
+//                Log.i("last", String.valueOf(spinnerNoise.getCount()));
+                double noiseSpinVal;
+                double lightSpinVal;
+                if(spinnerNoise.getSelectedItemPosition()+1 != spinnerNoise.getCount()) {
+                    noiseSpinVal = Double.parseDouble(spinnerNoise.getSelectedItem().toString());
+                } else {
+                    noiseSpinVal = Double.valueOf(1000000000);
+                }
+                if(spinnerLight.getSelectedItemPosition()+1 != spinnerLight.getCount()) {
+                    lightSpinVal = Double.parseDouble(spinnerLight.getSelectedItem().toString());
+                } else {
+                    lightSpinVal = Double.valueOf(1000000000);
+                }
+                onFilterChanged(noiseSpinVal, lightSpinVal);
+                Toast.makeText(getBaseContext(), "You select " + spinnerLight.getSelectedItem(), Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> arg0) {
+            }
+
+        });
 //        addRestaurant("Wimu", 4.5, 3.1, 9.4);
 //        addRestaurant("wimukthi", 5.0, 7.3, 8.8);
 //        addRestaurant("rajapaksha", 5.4, 8.5, 7.3);
@@ -82,22 +139,14 @@ public class RecommendationActivity extends AppCompatActivity {
                             postSnapshot.getKey(),
                             Double.parseDouble(postSnapshot.child("noise").getValue().toString()),
                             Double.parseDouble(postSnapshot.child("light").getValue().toString()),
-                            Double.parseDouble(postSnapshot.child("rating").getValue().toString())
+                            Double.parseDouble(postSnapshot.child("rating").getValue().toString()),
+                            Float.parseFloat(postSnapshot.child("longitude").getValue().toString()),
+                            Float.parseFloat(postSnapshot.child("latitude").getValue().toString())
                     );
                     restaurantsList.add(rest);
                 }
-                RecommendationActivity.this.runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        Log.i("Size", String.valueOf(restaurantsList.size()));
-                        restaurantAdapter = new RestaurantAdapter(restaurantsList);
-                        recyclerView.setAdapter(restaurantAdapter);
-                        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(RecommendationActivity.this);
-                        recyclerView.setLayoutManager(layoutManager);
-                        recyclerView.setHasFixedSize(true);
-                    }
-                });
+                Log.i("Size++", String.valueOf(restaurantsList.size()));
+                updateRecyclerView();
 //                Log.i("Size", String.valueOf(restaurantsList.size()));
             }
 
@@ -107,6 +156,40 @@ public class RecommendationActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    public void updateRecyclerView() {
+        RecommendationActivity.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Log.i("Size", String.valueOf(restaurantsForUi.size()));
+                restaurantAdapter = new RestaurantAdapter(restaurantsForUi);
+                recyclerView.setAdapter(restaurantAdapter);
+                RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(RecommendationActivity.this);
+                recyclerView.setLayoutManager(layoutManager);
+                recyclerView.setHasFixedSize(true);
+            }
+        });
+    }
+
+    public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+        Toast.makeText(parent.getContext(), "OnItemSelectedListener : " + parent.getItemAtPosition(pos).toString(), Toast.LENGTH_SHORT).show();
+    }
+
+    public void onFilterChanged(double noise, double light) {
+        restaurantsForUi.clear();
+        Log.i("Size--", String.valueOf(restaurantsList.size()));
+        for (Restaurant restaurant: restaurantsList) {
+//            Log.i("dataaaaaaaaa", String.valueOf(restaurantsList.size()));
+//            Log.i("dataaaaaaaaa", restaurant.getName());
+//            Log.i("dataaaaaaaaa-----", String.valueOf(restaurant.getLight()));
+            if(restaurant.getNoise() <= noise && restaurant.getLight() <= light) {
+                restaurantsForUi.add(restaurant);
+//                Log.i("dataaaaaaaaa", restaurant.getName());
+            }
+        }
+        updateRecyclerView();
+//        Log.i(restaurantsForUi);
     }
 
     public void addRestaurant(String name, double noise, double light, double rating) {

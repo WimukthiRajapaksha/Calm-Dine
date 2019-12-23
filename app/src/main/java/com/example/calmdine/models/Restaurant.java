@@ -5,15 +5,19 @@ public class Restaurant {
     private double noise;
     private double light;
     private double rating;
+    private float longitude;
+    private float latitude;
 
     public Restaurant() {
     }
 
-    public Restaurant(String name, double noise, double light, double rating) {
+    public Restaurant(String name, double noise, double light, double rating, float longitude, float latitude) {
         this.name = name;
         this.noise = noise;
         this.light = light;
         this.rating = rating;
+        this.longitude = longitude;
+        this.latitude = latitude;
     }
 
     public String getName() {
@@ -46,5 +50,21 @@ public class Restaurant {
 
     public void setRating(double rating) {
         this.rating = rating;
+    }
+
+    public float getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(float longitude) {
+        this.longitude = longitude;
+    }
+
+    public float getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(float latitude) {
+        this.latitude = latitude;
     }
 }

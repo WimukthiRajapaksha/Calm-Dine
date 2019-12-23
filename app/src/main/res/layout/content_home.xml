@@ -22,6 +22,7 @@
                 android:id="@+id/txtAppName"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
+                android:fontFamily="serif"
                 android:gravity="center_vertical"
                 android:paddingLeft="5dp"
                 android:text="@string/calm_dine_02"

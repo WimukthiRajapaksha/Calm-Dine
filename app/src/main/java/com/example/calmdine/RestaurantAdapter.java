@@ -1,9 +1,12 @@
 package com.example.calmdine;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.LayerDrawable;
+import android.net.Uri;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,9 +17,11 @@ import android.widget.ProgressBar;
 import android.widget.RatingBar;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.calmdine.models.Restaurant;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -25,7 +30,7 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.My
     private ArrayList<Restaurant> mRestaurants = new ArrayList<Restaurant>();
     private Context mContext;
 
-    public static class MyViewHolder extends RecyclerView.ViewHolder {
+    public static class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         public TextView txtNoiseValue;
         public TextView txtLightValue;
         public TextView txtRestaurantName;
@@ -40,6 +45,12 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.My
             this.txtRestaurantName = view.findViewById(R.id.txtRestaurantName);
             this.txtRateValue = view.findViewById(R.id.txtRateValue);
         }
+
+        @Override
+        public void onClick(View view) {
+//            Log.i("Click", "event triggered");
+//            Log.i("values", txtRestaurantName.toString());
+        }
     }
 
     public RestaurantAdapter(ArrayList<Restaurant> restaurant) {
@@ -48,23 +59,18 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.My
 
     @Override
     public RestaurantAdapter.MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        Context context = parent.getContext();
+        mContext = parent.getContext();
         LinearLayout recommendationListLayoutLinearLayout = (LinearLayout) LayoutInflater.from(parent.getContext()).inflate(R.layout.activity_recommendation_item, parent, false);
-//        TextView restaurantName = (TextView) LayoutInflater.from(parent.getContext()).inflate(R.id.txtRestaurantName, parent, false);
-
-//        System.out.println("-----------------------------" + v);
         MyViewHolder vh = new MyViewHolder(recommendationListLayoutLinearLayout);
-//        System.out.println("---------++++++++++++--------" +vh);
         return vh;
     }
 
     @Override
-    public void onBindViewHolder(MyViewHolder holder, int position) {
-        Restaurant currentRestaurant = mRestaurants.get(position);
+    public void onBindViewHolder(final MyViewHolder holder, int position) {
+        final Restaurant currentRestaurant = mRestaurants.get(position);
         holder.txtRestaurantName.setText(currentRestaurant.getName());
         holder.txtLightValue.setText(String.valueOf(currentRestaurant.getLight()));
         holder.txtNoiseValue.setText(String.valueOf(currentRestaurant.getNoise()));
-//        holder.ratingBar.setRating(0.3f);
         holder.ratingBar.setRating(Float.parseFloat(String.valueOf(currentRestaurant.getRating())));
         holder.txtRateValue.setText("("+currentRestaurant.getRating()+")");
 
@@ -73,9 +79,20 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.My
         stars.getDrawable(0).setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_ATOP);
         stars.getDrawable(1).setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_ATOP);
 
-//        holder.txtNoiseValue.setText(String.valueOf(mRestaurants.get(position).getLight()));
-//        holder.txtLightValue.setText(String.valueOf(mRestaurants.get(position).getNoise()));
-//        holder.ratingBar.setRating((float) mRestaurants.get(position).getRating());
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+//                PolylineOptions rectOptions = new PolylineOptions()
+                Uri uri = Uri.parse("geo:"+currentRestaurant.getLongitude()+","+currentRestaurant.getLatitude() + "?q=" + Uri.encode(currentRestaurant.getName()));
+//                Uri uri = Uri.parse("google.navigation:q=" + Uri.encode(currentRestaurant.getName()));
+                Log.i("uri", String.valueOf(uri));
+                Uri gmmIntentUri = uri;
+                Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                mapIntent.setPackage("com.google.android.apps.maps");
+                mContext.startActivity(mapIntent);
+            }
+        });
+
     }
 
     @Override

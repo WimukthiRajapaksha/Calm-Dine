@@ -22,6 +22,7 @@
                 android:layout_height="60dp"
                 android:gravity="center_vertical"
                 android:paddingLeft="5dp"
+                android:fontFamily="serif"
                 android:text="@string/calm_dine_02"
                 android:textSize="40sp" />
         </androidx.cardview.widget.CardView>
