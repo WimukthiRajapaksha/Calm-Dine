@@ -14,15 +14,21 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.example.calmdine.ServicesFire.BackendServices;
+import com.example.calmdine.models.AdapterModel;
 import com.example.calmdine.models.Restaurant;
+import com.example.calmdine.models.RestaurantWithTimestamp;
+import com.example.calmdine.models.SensorModel;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RecommendationActivity extends AppCompatActivity {
@@ -33,9 +39,18 @@ public class RecommendationActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private RestaurantAdapter restaurantAdapter;
     ArrayList<Restaurant> restaurantsList;
-    ArrayList<Restaurant> restaurantsForUi;
+    List<AdapterModel> restaurantsForUi;
+    boolean initializedUiList = false;
+
+    BackendServices backendServices;
 
     FirebaseDatabase firebaseDatabase;
+    DatabaseReference databaseReference;
+    DatabaseReference restaurantRef;
+
+    private boolean listCompleted = false;
+    List<RestaurantWithTimestamp> restaurantWithTimestampList = new ArrayList<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +83,12 @@ public class RecommendationActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerViewRecommendations);
         recyclerView.setHasFixedSize(true);
 
+        backendServices = new BackendServices();
+
+        firebaseDatabase = FirebaseDatabase.getInstance();
+        databaseReference = firebaseDatabase.getReference();
+        restaurantRef = databaseReference.child("restaurants");
+
         loadRestaurantData();
 
         spinnerLight.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -88,13 +109,12 @@ public class RecommendationActivity extends AppCompatActivity {
                     lightSpinVal = Double.valueOf(1000000000);
                 }
                 onFilterChanged(noiseSpinVal, lightSpinVal);
-                Toast.makeText(getBaseContext(), "You select " + spinnerLight.getSelectedItem(), Toast.LENGTH_LONG).show();
+//                Toast.makeText(getBaseContext(), "You select " + spinnerLight.getSelectedItem(), Toast.LENGTH_LONG).show();
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> arg0) {
             }
-
         });
 
         spinnerNoise.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -115,7 +135,7 @@ public class RecommendationActivity extends AppCompatActivity {
                     lightSpinVal = Double.valueOf(1000000000);
                 }
                 onFilterChanged(noiseSpinVal, lightSpinVal);
-                Toast.makeText(getBaseContext(), "You select " + spinnerLight.getSelectedItem(), Toast.LENGTH_LONG).show();
+//                Toast.makeText(getBaseContext(), "You select " + spinnerLight.getSelectedItem(), Toast.LENGTH_LONG).show();
             }
 
             @Override
@@ -130,67 +150,211 @@ public class RecommendationActivity extends AppCompatActivity {
     }
 
     public void loadRestaurantData() {
-        DatabaseReference restaurantRef = firebaseDatabase.getReference().child("restaurants");
+
         restaurantRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                Iterable<DataSnapshot> arrLightWithTimeStamp = null;
+                Iterable<DataSnapshot> arrNoiseWithTimeStamp = null;
+                List<String> arrNames = new ArrayList<>();
+                SensorModel sensorModel;
+
+                Log.i("time--11", "0");
                 for (DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
-                    Restaurant rest = new Restaurant(
+                    List<SensorModel> sensorModelsForLight = new ArrayList<>();
+                    List<SensorModel> sensorModelsForNoise = new ArrayList<>();
+
+                    Log.i("time--00", "0");
+//                    Log.i("Object--", String.valueOf(postSnapshot.child("light")));
+                    String nameSensor = postSnapshot.child("name").getValue().toString();
+                    arrLightWithTimeStamp = postSnapshot.child("light").getChildren();
+                    arrNoiseWithTimeStamp = postSnapshot.child("noise").getChildren();
+                    arrNames.add(postSnapshot.child("name").getValue().toString());
+
+
+
+                    while (arrLightWithTimeStamp.iterator().hasNext()) {
+                        Log.i("time--==", "0");
+                        DataSnapshot snapshotLight = arrLightWithTimeStamp.iterator().next();
+//                        Log.i("timestamp--", String.valueOf(snapshotLight.child("timeStamp").getValue()));
+                        SensorModel lightTemp = new SensorModel(
+                                nameSensor,
+                                Double.parseDouble(String.valueOf(snapshotLight.child("light").getValue())),
+                                Double.valueOf(0),
+                                Timestamp.valueOf(String.valueOf(snapshotLight.child("timeStamp").getValue()))
+                        );
+                        sensorModelsForLight.add(lightTemp);
+                    }
+                    while (arrNoiseWithTimeStamp.iterator().hasNext()) {
+                        Log.i("time----", "0");
+                        DataSnapshot snapshotLight = arrNoiseWithTimeStamp.iterator().next();
+                        SensorModel noiseTemp = new SensorModel(
+                                nameSensor,
+                                Double.valueOf(0),
+                                Double.parseDouble(String.valueOf(snapshotLight.child("noise").getValue())),
+                                Timestamp.valueOf(String.valueOf(snapshotLight.child("timeStamp").getValue()))
+                        );
+                        sensorModelsForNoise.add(noiseTemp);
+                    }
+//                    while (restaurantWithTimestampList.iterator().hasNext()) {
+//                        RestaurantWithTimestamp currentRestTimestamp = restaurantWithTimestampList.iterator().next();
+////                        Log.i("time", String.valueOf(currentRestTimestamp.getLight()));
+//                        for (SensorModel senModel: currentRestTimestamp.getLight()) {
+//                            Log.i("time----", String.valueOf(senModel.getTimestamp()));
+//                        }
+//
+//                    }
+                    RestaurantWithTimestamp restTime = new RestaurantWithTimestamp(
                             postSnapshot.getKey(),
-                            Double.parseDouble(postSnapshot.child("noise").getValue().toString()),
-                            Double.parseDouble(postSnapshot.child("light").getValue().toString()),
+                            sensorModelsForNoise,
+                            sensorModelsForLight,
                             Double.parseDouble(postSnapshot.child("rating").getValue().toString()),
                             Float.parseFloat(postSnapshot.child("longitude").getValue().toString()),
                             Float.parseFloat(postSnapshot.child("latitude").getValue().toString())
                     );
-                    restaurantsList.add(rest);
+                    Log.i("time---------", String.valueOf(restTime.getLightList().size()));
+                    restaurantWithTimestampList.add(restTime);
+                    Log.i("time--++", "1");
                 }
-                Log.i("Size++", String.valueOf(restaurantsList.size()));
-                updateRecyclerView();
-//                Log.i("Size", String.valueOf(restaurantsList.size()));
+                listCompleted = true;
+                Log.i("time--++--", "1");
+                Log.i("time--++--", String.valueOf(restaurantWithTimestampList.size()));
+//                restaurantsForUi = restaurantWithTimestampList;
+                initializedUiList = true;
             }
-
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-                System.out.println("The read failed: " + databaseError.getCode());
+                Log.i("time--1---1", "0");
             }
         });
+//        DatabaseReference restaurantRef = firebaseDatabase.getReference().child("restaurants");
+//
+//        -----------------------------
+//        restaurantRef.addValueEventListener(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+//                for (DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
+//                    Restaurant rest = new Restaurant(
+//                            postSnapshot.getKey(),
+//                            Double.parseDouble(postSnapshot.child("noise").getValue().toString()),
+//                            Double.parseDouble(postSnapshot.child("light").getValue().toString()),
+//                            Double.parseDouble(postSnapshot.child("rating").getValue().toString()),
+//                            Float.parseFloat(postSnapshot.child("longitude").getValue().toString()),
+//                            Float.parseFloat(postSnapshot.child("latitude").getValue().toString())
+//                    );
+//                    restaurantsList.add(rest);
+//                }
+//                Log.i("Size++", String.valueOf(restaurantsList.size()));
+//                updateRecyclerView();
+////                Log.i("Size", String.valueOf(restaurantsList.size()));
+//            }
+//
+//            @Override
+//            public void onCancelled(@NonNull DatabaseError databaseError) {
+//                System.out.println("The read failed: " + databaseError.getCode());
+//            }
+//        });
+//
+//        TODO - done
+//        backendServices.getAllRestaurantDetailsForRecommendation();
+//        Log.i("returnList--", String.valueOf(returnList.size()));
+//        for (RestaurantWithTimestamp restaurantWithTimestamp: returnList) {
+//            Log.i("returnList--", restaurantWithTimestamp.getName());
+//        }
+//        ----------------------------------
 
     }
 
-    public void updateRecyclerView() {
-        RecommendationActivity.this.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Log.i("Size", String.valueOf(restaurantsForUi.size()));
-                restaurantAdapter = new RestaurantAdapter(restaurantsForUi);
-                recyclerView.setAdapter(restaurantAdapter);
-                RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(RecommendationActivity.this);
-                recyclerView.setLayoutManager(layoutManager);
-                recyclerView.setHasFixedSize(true);
-            }
-        });
+//    public void updateRecyclerView() {
+////        while (true) {
+//        Log.i("time--000", String.valueOf(restaurantWithTimestampList.size()));
+//        if (initializedUiList) {
+//            RecommendationActivity.this.runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    Log.i("Size", String.valueOf(restaurantsForUi.size()));
+//                    restaurantAdapter = new RestaurantAdapter(restaurantsForUi);
+//                    recyclerView.setAdapter(restaurantAdapter);
+//                    RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(RecommendationActivity.this);
+//                    recyclerView.setLayoutManager(layoutManager);
+//                    recyclerView.setHasFixedSize(true);
+//                }
+//            });
+////                break;
+//        }
+////        }
+//
+//    }
+
+    public void updateRecyclerView(final List<AdapterModel> adapterModels) {
+//        Log.i("time--000", String.valueOf(restaurantWithTimestamps.size()));
+        if (initializedUiList) {
+            RecommendationActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.i("Size", String.valueOf(adapterModels.size()));
+                    restaurantAdapter = new RestaurantAdapter(adapterModels);
+                    recyclerView.setAdapter(restaurantAdapter);
+                    RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(RecommendationActivity.this);
+                    recyclerView.setLayoutManager(layoutManager);
+                    recyclerView.setHasFixedSize(true);
+                }
+            });
+        }
     }
 
     public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-        Toast.makeText(parent.getContext(), "OnItemSelectedListener : " + parent.getItemAtPosition(pos).toString(), Toast.LENGTH_SHORT).show();
+//        Toast.makeText(parent.getContext(), "OnItemSelectedListener : " + parent.getItemAtPosition(pos).toString(), Toast.LENGTH_SHORT).show();
     }
 
     public void onFilterChanged(double noise, double light) {
         restaurantsForUi.clear();
-        Log.i("Size--", String.valueOf(restaurantsList.size()));
-        for (Restaurant restaurant: restaurantsList) {
+        Log.i("Size--", String.valueOf(restaurantWithTimestampList.size()));
+        restaurantsForUi.clear();
+        for (RestaurantWithTimestamp restaurant: restaurantWithTimestampList) {
+            Log.i("size-----", restaurant.getName());
+            float lightSum = 0f;
+            for (SensorModel lightVal: restaurant.getLightList()) {
+                lightSum += lightVal.getLight();
+            }
+            Log.i("size-----", String.valueOf(lightSum));
+            float noiseSum = 0f;
+            for (SensorModel noiseVal: restaurant.getNoiseList()) {
+                noiseSum += noiseVal.getNoise();
+            }
+            Log.i("size-----", String.valueOf(noiseSum));
+            if (noise>=noiseSum && light >= lightSum) {
+                AdapterModel adapterModel = new AdapterModel(
+                        restaurant.getName(),
+                        lightSum/restaurant.getLightList().size(),
+                        noiseSum/restaurant.getNoiseList().size(),
+                        1.5,
+                        null,
+                        restaurant.getLongitude(),
+                        restaurant.getLatitude()
+                );
+                restaurantsForUi.add(adapterModel);
+            }
+
 //            Log.i("dataaaaaaaaa", String.valueOf(restaurantsList.size()));
 //            Log.i("dataaaaaaaaa", restaurant.getName());
 //            Log.i("dataaaaaaaaa-----", String.valueOf(restaurant.getLight()));
-            if(restaurant.getNoise() <= noise && restaurant.getLight() <= light) {
-                restaurantsForUi.add(restaurant);
-//                Log.i("dataaaaaaaaa", restaurant.getName());
-            }
+
+//            ------------------------------
+//
+//            if(restaurant.getNoise() <= noise && restaurant.getLight() <= light) {
+//                restaurantsForUi.add(restaurant);
+////                Log.i("dataaaaaaaaa", restaurant.getName());
+//            }
+//
+//            ------------------------------
         }
-        updateRecyclerView();
+        updateRecyclerView(restaurantsForUi);
 //        Log.i(restaurantsForUi);
     }
+
+
 
     public void addRestaurant(String name, double noise, double light, double rating) {
         DatabaseReference restaurantRef = firebaseDatabase.getReference().child("restaurants");

@@ -20,14 +20,17 @@ import android.widget.TextView;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.calmdine.models.AdapterModel;
 import com.example.calmdine.models.Restaurant;
+import com.example.calmdine.models.RestaurantWithTimestamp;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.List;
 
 public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.MyViewHolder> {
-    private ArrayList<Restaurant> mRestaurants = new ArrayList<Restaurant>();
+    private List<AdapterModel> mRestaurants = new ArrayList<AdapterModel>();
     private Context mContext;
 
     public static class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -53,7 +56,7 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.My
         }
     }
 
-    public RestaurantAdapter(ArrayList<Restaurant> restaurant) {
+    public RestaurantAdapter(List<AdapterModel> restaurant) {
         mRestaurants = restaurant;
     }
 
@@ -67,10 +70,10 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.My
 
     @Override
     public void onBindViewHolder(final MyViewHolder holder, int position) {
-        final Restaurant currentRestaurant = mRestaurants.get(position);
+        final AdapterModel currentRestaurant = mRestaurants.get(position);
         holder.txtRestaurantName.setText(currentRestaurant.getName());
-        holder.txtLightValue.setText(String.valueOf(currentRestaurant.getLight()));
-        holder.txtNoiseValue.setText(String.valueOf(currentRestaurant.getNoise()));
+        holder.txtLightValue.setText(String.format("%.3f",(currentRestaurant.getLight())));
+        holder.txtNoiseValue.setText(String.format("%.3f",(currentRestaurant.getNoise())));
         holder.ratingBar.setRating(Float.parseFloat(String.valueOf(currentRestaurant.getRating())));
         holder.txtRateValue.setText("("+currentRestaurant.getRating()+")");
 

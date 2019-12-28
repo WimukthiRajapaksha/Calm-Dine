@@ -17,6 +17,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 
+import com.example.calmdine.ServicesFire.BackendServices;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
 import com.firebase.geofire.LocationCallback;
@@ -62,6 +63,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Locale;
+
 public class HomeActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener {
 
     FirebaseDatabase firebaseDatabase;
@@ -79,13 +82,25 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
     String latTextView;
     String lonTextView;
     Button btnRecommendation;
+    Context mContext;
 
     private SensorManager sensorManager;
 
+    private static final String FINE_LOCATION = Manifest.permission.ACCESS_FINE_LOCATION;
+    private static final String COARSE_LOCATION = Manifest.permission.ACCESS_COARSE_LOCATION;
+
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1234;
     private final int MY_PERMISSIONS_REQUEST_AUDIO = 123;
 
-    FusedLocationProviderClient mFusedLocationClient;
+//    FusedLocationProviderClient mFusedLocationClient;
+    private FusedLocationProviderClient mFusedLocationProviderClient;
+    private boolean mLocationPermissionGranted;
+    private boolean mMicrophonePermissionGranted;
     protected LocationManager locationManager;
+    private BackendServices backendServices;
+
+    private Location currentLocation;
+    private static final float DEFAULT_ZOOM = 10f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,10 +113,13 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         spinnerLight = findViewById(R.id.spinnerLight);
 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mContext = getApplicationContext();
 
         firebaseDatabase = FirebaseDatabase.getInstance();
         mAuth = FirebaseAuth.getInstance();
         dbRef = firebaseDatabase.getReference("");
+
+        backendServices = new BackendServices();
 
         ArrayAdapter<CharSequence> adapterNoise = ArrayAdapter.createFromResource(this, R.array.noise_levels, android.R.layout.simple_spinner_item);
         ArrayAdapter<CharSequence> adapterLight = ArrayAdapter.createFromResource(this, R.array.light_levels, android.R.layout.simple_spinner_item);
@@ -119,7 +137,8 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 
         mLocationRequest = LocationRequest.create().setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY).setInterval(10 * 1000).setFastestInterval(1 * 1000);
 
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+//        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        mLocationPermissionGranted = false;
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 //        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -133,40 +152,73 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 //            return;
 //        }
 //        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+
+        permissionCheckAndRequest();
+    }
+
+    public void permissionCheckAndRequest() {
+        if ((ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) && (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},MY_PERMISSIONS_REQUEST_AUDIO);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},LOCATION_PERMISSION_REQUEST_CODE);
+        } else if ((ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},LOCATION_PERMISSION_REQUEST_CODE);
+        } else if ((ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)){
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},MY_PERMISSIONS_REQUEST_AUDIO);
         } else {
-            AsyncTaskRunner asyncTaskRunner = new AsyncTaskRunner(sensorManager);
-            asyncTaskRunner.execute();
+            mMicrophonePermissionGranted = true;
+            mLocationPermissionGranted = true;
+            Log.i("permission", "inside");
+            startBackgroundProcess();
         }
+        Log.i("permission", "outside");
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        Log.i("permissions", String.valueOf(grantResults));
         switch (requestCode) {
             case MY_PERMISSIONS_REQUEST_AUDIO: {
                 // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0) {
+                    for (int permission: grantResults) {
+                        if (permission == PackageManager.PERMISSION_GRANTED) {
+                            mMicrophonePermissionGranted = true;
+                            startBackgroundProcess();
+//                            AsyncTaskRunner asyncTaskRunner = new AsyncTaskRunner(sensorManager);
+//                            asyncTaskRunner.execute();
+                        } else {
+                            Toast.makeText(this, "permission denied by user", Toast.LENGTH_LONG).show();
+                        }
+                    }
 //                    initializePlayerAndStartRecording();
-                    AsyncTaskRunner asyncTaskRunner = new AsyncTaskRunner(sensorManager);
-                    asyncTaskRunner.execute();
                 } else {
                     Toast.makeText(this, "permission denied by user", Toast.LENGTH_LONG).show();
                 }
                 return;
             }
+            case LOCATION_PERMISSION_REQUEST_CODE : {
+                if(grantResults.length > 0) {
+                    for(int permission: grantResults) {
+                        if(permission == PackageManager.PERMISSION_GRANTED) {
+                            mLocationPermissionGranted = true;
+                            startBackgroundProcess();
+                            Log.d("permission", "onRequestPermissionsResult: Permission Granted");
+                            return;
+                        }
+                    }
+                }
+            }
         }
     }
 
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-//        googleMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker"));
-        mMap = googleMap;
-
-        // Add a marker in Sydney, Australia, and move the camera.
-//        LatLng sydney = new LatLng(-34, 151);
-//        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-//        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    public void startBackgroundProcess() {
+        Log.i("permission", "background");
+        Log.i("permission", String.valueOf(mLocationPermissionGranted));
+        Log.i("permission", String.valueOf(mMicrophonePermissionGranted));
+        if(mLocationPermissionGranted && mMicrophonePermissionGranted) {
+            AsyncTaskRunner asyncTaskRunner = new AsyncTaskRunner(sensorManager, mContext);
+            asyncTaskRunner.execute();
+        }
     }
 
     @Override
@@ -189,28 +241,28 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    private boolean checkPermissions(){
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-            return true;
-        }
-        return false;
-    }
+//    private boolean checkPermissions(){
+//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+//                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    private void requestPermissions(){
+//        ActivityCompat.requestPermissions(
+//                this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_ID
+//        );
+//    }
 
-    private void requestPermissions(){
-        ActivityCompat.requestPermissions(
-                this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_ID
-        );
-    }
-
-    @Override
-    public void onResume(){
-        super.onResume();
-        if (checkPermissions()) {
-            getLastLocation();
-        }
-
-    }
+//    @Override
+//    public void onResume(){
+//        super.onResume();
+//        if (checkPermissions()) {
+//            getLastLocation();
+//        }
+//
+//    }
 
     private boolean isLocationEnabled(){
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -219,65 +271,108 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         );
     }
 
-    @SuppressLint("MissingPermission")
-    private void getLastLocation(){
-        if (checkPermissions()) {
-            if (isLocationEnabled()) {
-                mFusedLocationClient.getLastLocation().addOnCompleteListener(
-                        new OnCompleteListener<Location>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Location> task) {
-                                Location location = task.getResult();
-                                if (location == null) {
-                                    requestNewLocationData();
-                                } else {
-                                    latTextView = (location.getLatitude()+"");
-                                    lonTextView = (location.getLongitude()+"");
-                                }
-                            }
-                        }
-                );
-            } else {
-                Toast.makeText(this, "Turn on location", Toast.LENGTH_LONG).show();
-                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                startActivity(intent);
-            }
-        } else {
-            requestPermissions();
-        }
-    }
+//    @SuppressLint("MissingPermission")
+//    private void getLastLocation(){
+//        if (checkPermissions()) {
+//            if (isLocationEnabled()) {
+//                mFusedLocationClient.getLastLocation().addOnCompleteListener(
+//                        new OnCompleteListener<Location>() {
+//                            @Override
+//                            public void onComplete(@NonNull Task<Location> task) {
+//                                Location location = task.getResult();
+//                                if (location == null) {
+//                                    requestNewLocationData();
+//                                } else {
+//                                    latTextView = (location.getLatitude()+"");
+//                                    lonTextView = (location.getLongitude()+"");
+//                                }
+//                            }
+//                        }
+//                );
+//            } else {
+//                Toast.makeText(this, "Turn on location", Toast.LENGTH_LONG).show();
+//                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+//                startActivity(intent);
+//            }
+//        } else {
+//            requestPermissions();
+//        }
+//    }
+//
+//    @SuppressLint("MissingPermission")
+//    private void requestNewLocationData(){
+//
+//        LocationRequest mLocationRequest = new LocationRequest();
+//        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+//        mLocationRequest.setInterval(0);
+//        mLocationRequest.setFastestInterval(0);
+//        mLocationRequest.setNumUpdates(1);
+//
+////        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+////        mFusedLocationClient.requestLocationUpdates(mLocationRequest, (com.google.android.gms.location.LocationCallback) mLocationCallback, Looper.myLooper());
+//    }
 
-    @SuppressLint("MissingPermission")
-    private void requestNewLocationData(){
-
-        LocationRequest mLocationRequest = new LocationRequest();
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        mLocationRequest.setInterval(0);
-        mLocationRequest.setFastestInterval(0);
-        mLocationRequest.setNumUpdates(1);
-
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        mFusedLocationClient.requestLocationUpdates(mLocationRequest, (com.google.android.gms.location.LocationCallback) mLocationCallback, Looper.myLooper());
-    }
-
-    private LocationCallback mLocationCallback = new LocationCallback() {
-        @Override
-        public void onLocationResult(String key, GeoLocation location) {
-            latTextView = (location.latitude+"");
-            lonTextView = (location.longitude+"");
-        }
-
-        @Override
-        public void onCancelled(DatabaseError databaseError) {
-
-        }
-    };
+//    private LocationCallback mLocationCallback = new LocationCallback() {
+//        @Override
+//        public void onLocationResult(String key, GeoLocation location) {
+//            latTextView = (location.latitude+"");
+//            lonTextView = (location.longitude+"");
+//        }
+//
+//        @Override
+//        public void onCancelled(DatabaseError databaseError) {
+//
+//        }
+//    };
 
     public void onRecommendationList(View view) {
+//        backendServices.getAllRestaurantDetailsForRecommendation();
         Intent intent = new Intent(HomeActivity.this, RecommendationActivity.class);
         intent.putExtra("noise", spinnerNoise.getSelectedItemPosition());
         intent.putExtra("light", spinnerLight.getSelectedItemPosition());
         startActivity(intent);
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        Toast.makeText(this, "Map is ready...", Toast.LENGTH_SHORT).show();
+        mMap = googleMap;
+        if(mLocationPermissionGranted) {
+            getDeviceLocation();
+            mMap.setMyLocationEnabled(true);
+            mMap.getUiSettings().setMyLocationButtonEnabled(false);
+        }
+    }
+
+    private void getDeviceLocation(){
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+
+        try {
+            if (mLocationPermissionGranted) {
+                Task location = mFusedLocationProviderClient.getLastLocation();
+                location.addOnCompleteListener(new OnCompleteListener() {
+                    @Override
+                    public void onComplete(@NonNull Task task) {
+                        if (task.isSuccessful()) {
+                            Location currentLocation = (Location) task.getResult();
+                            moveCamera(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), DEFAULT_ZOOM);
+                        }
+                    }
+                });
+            }
+        } catch (SecurityException e) {
+        }
+    }
+
+    private void moveCamera(LatLng latLng, float zoom) {
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoom));
+    }
+
+    private void addMarker(LatLng latLng, String title) {
+        MarkerOptions markerOptions = new MarkerOptions()
+                .position(latLng)
+                .title(title);
+        mMap.addMarker(markerOptions);
     }
 
 }

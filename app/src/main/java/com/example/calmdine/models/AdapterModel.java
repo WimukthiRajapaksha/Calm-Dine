@@ -1,23 +1,23 @@
 package com.example.calmdine.models;
 
-import java.util.List;
+import android.widget.ImageView;
 
-public class Restaurant {
+import java.sql.Timestamp;
+
+public class AdapterModel {
     private String name;
-    private List<Double> noise;
-    private List<Double> light;
+    private double light;
+    private double noise;
     private double rating;
+    private ImageView imageView;
     private float longitude;
     private float latitude;
-
-    public Restaurant() {
-    }
-
-    public Restaurant(String name, List<Double> noise, List<Double> light, double rating, float longitude, float latitude) {
+    public AdapterModel(String name, double light, double noise, double rating, ImageView imageView, float longitude, float latitude) {
         this.name = name;
-        this.noise = noise;
         this.light = light;
+        this.noise = noise;
         this.rating = rating;
+        this.imageView = imageView;
         this.longitude = longitude;
         this.latitude = latitude;
     }
@@ -30,20 +30,20 @@ public class Restaurant {
         this.name = name;
     }
 
-    public List<Double> getNoise() {
-        return noise;
-    }
-
-    public void setNoise(List<Double> noise) {
-        this.noise = noise;
-    }
-
-    public List<Double> getLight() {
+    public double getLight() {
         return light;
     }
 
-    public void setLight(List<Double> light) {
+    public void setLight(double light) {
         this.light = light;
+    }
+
+    public double getNoise() {
+        return noise;
+    }
+
+    public void setNoise(double noise) {
+        this.noise = noise;
     }
 
     public double getRating() {
@@ -52,6 +52,14 @@ public class Restaurant {
 
     public void setRating(double rating) {
         this.rating = rating;
+    }
+
+    public ImageView getImageView() {
+        return imageView;
+    }
+
+    public void setImageView(ImageView imageView) {
+        this.imageView = imageView;
     }
 
     public float getLongitude() {

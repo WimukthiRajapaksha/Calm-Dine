@@ -1,55 +1,55 @@
 package com.example.calmdine;
 
-import android.Manifest;
-import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
-import android.hardware.SensorListener;
 import android.hardware.SensorManager;
-import android.hardware.TriggerEvent;
-import android.hardware.TriggerEventListener;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.util.Printer;
-import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
+import com.example.calmdine.ServicesFire.BackendServices;
 import com.example.calmdine.models.Restaurant;
+import com.example.calmdine.models.SensorModel;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import java.security.PrivateKey;
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 
-public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements SensorEventListener {
+public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements SensorEventListener  {
     private AudioRecord ar = null;
     private int minSize;
     private SensorManager sensorManager;
     private Sensor lightSensor;
-    private SensorEventListener sensorEventListener;
     private int samplingRate;
     private int intervalTime;
+    private double avgLight;
     private ArrayList<Double> lightSensorValues;
+    private ArrayList<Double> noiseSensorValues;
     ArrayList<Restaurant> restaurantsList;
     ArrayList<Restaurant> restaurantsUpdatedList;
+    private Context mContext;
 
     FirebaseDatabase firebaseDatabase;
     DatabaseReference restaurantRef;
 
+    public BackgroundLocationListener mBackgroundLocationListener;
+    ProgressDialog progDailog = null;
+    BackendServices backendServices;
 
-    public AsyncTaskRunner(SensorManager sensorManager) {
+
+    public AsyncTaskRunner(SensorManager sensorManager, Context context) {
         minSize = 64;
         this.sensorManager = sensorManager;
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
@@ -58,34 +58,12 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
         lightSensorValues = new ArrayList<>();
         restaurantsList = new ArrayList<>();
         restaurantsUpdatedList = new ArrayList<>();
-
+        mContext = context;
         firebaseDatabase = FirebaseDatabase.getInstance();
         restaurantRef = firebaseDatabase.getReference().child("restaurants");
-
-        Log.i("Constructor", "---------------");
-
-        restaurantRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
-                    Restaurant rest = new Restaurant(
-                            postSnapshot.getKey(),
-                            Double.parseDouble(postSnapshot.child("noise").getValue().toString()),
-                            Double.parseDouble(postSnapshot.child("light").getValue().toString()),
-                            Double.parseDouble(postSnapshot.child("rating").getValue().toString()),
-                            Float.parseFloat(postSnapshot.child("longitude").getValue().toString()),
-                            Float.parseFloat(postSnapshot.child("latitude").getValue().toString())
-                    );
-                    restaurantsList.add(rest);
-                }
-//                Log.i("Size++", String.valueOf(restaurantsList.size()));
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                System.out.println("The read failed: " + databaseError.getCode());
-            }
-        });
+        mBackgroundLocationListener = new BackgroundLocationListener(mContext);
+        backendServices = new BackendServices();
+        restaurantsList = backendServices.returnAllRestaurants();
     }
 
     public void start() {
@@ -102,7 +80,6 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
 
     public double getAmplitude() {
         short[] buffer = new short[minSize];
-//        Log.i("Amplitude", String.valueOf(minSize));
         ar = new AudioRecord(MediaRecorder.AudioSource.MIC, 8000,AudioFormat.CHANNEL_CONFIGURATION_MONO, AudioFormat.ENCODING_PCM_16BIT,minSize);
         ar.read(buffer, 0, minSize);
         int max = 0;
@@ -153,14 +130,35 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
     protected Void doInBackground(Void... voids) {
         while (true) {
             try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
+                Thread.sleep(5000);
+            } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                Log.i("background", "result");
+                Log.i("Amplitude", String.valueOf(getAmplitude()));
+                sensorManager.registerListener(this, lightSensor, samplingRate);
             }
-            Log.i("background", "result");
-            Log.i("Amplitude", String.valueOf(getAmplitude()));
-
-            sensorManager.registerListener(this, lightSensor, samplingRate);
+            try {
+                Thread.sleep(1);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                    while (true) {
+                        if (restaurantsList.iterator().hasNext()) {
+                            Restaurant res = restaurantsList.iterator().next();
+                            Log.i("eeeE", String.valueOf(round(res.getLatitude())));
+                            Log.i("eeEe", String.valueOf(round(mBackgroundLocationListener.getLocation().getLatitude())));
+                            Log.i("eEee", String.valueOf(round(res.getLongitude())));
+                            Log.i("Eeee", String.valueOf(round(mBackgroundLocationListener.getLocation().getLongitude())));
+                            if ((round(res.getLatitude()) == round(mBackgroundLocationListener.getLocation().getLatitude())) && (round(res.getLongitude()) == round(mBackgroundLocationListener.getLocation().getLongitude()))) {
+                                Log.i("Eeeeeeeeeeeeeeeeee", String.valueOf(avgLight) + "  " + new Timestamp(System.currentTimeMillis()));
+                                SensorModel sensorModel = new SensorModel(res.getName(), avgLight, 0);
+                                backendServices.addSensorData(sensorModel, res);
+                            }
+                        }
+                        break;
+                    }
+            }
         }
     }
 
@@ -170,7 +168,6 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
             synchronized (this) {
                 lightSensorValues.add(Double.valueOf(sensorEvent.values[0]));
                 Log.i("light", String.valueOf(sensorEvent.values[0]));
-                Log.i("light--", String.valueOf(lightSensor.getMaximumRange()));
                 intervalTime--;
             }
         }
@@ -180,19 +177,27 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
             for (Double lightValSum : lightSensorValues) {
                 sum += lightValSum;
             }
-            double avg = sum/lightSensorValues.size();
-            for (Restaurant res: restaurantsList) {
-                if (res.getLatitude() == 79.900873f && res.getLongitude() == 6.795937f) {
-                    res.setLight(avg);
-                    restaurantRef.child(res.getName()).setValue(res);
-                }
-            }
+            avgLight = sum/lightSensorValues.size();
+            Log.i("list", String.valueOf(restaurantsList.size()));
 
-
-
+//            TODO - noise sensor value calculator
+//            for (Double noiseValSum : noiseSensorValues) {
+//                sum += lightValSum;
+//            }
+//            double avgLight = sum/lightSensorValues.size();
             intervalTime = 10;
             lightSensorValues.clear();
         }
+    }
+
+    public static double round(double value) {
+        int places = 3;
+        if (places < 0) throw new IllegalArgumentException();
+
+        long factor = (long) Math.pow(10, places);
+        value = value * factor;
+        long tmp = Math.round(value);
+        return (double) tmp / factor;
     }
 
     @Override

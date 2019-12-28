@@ -2,18 +2,18 @@ package com.example.calmdine.models;
 
 import java.util.List;
 
-public class Restaurant {
+public class RestaurantWithTimestamp {
     private String name;
-    private List<Double> noise;
-    private List<Double> light;
+    private List<SensorModel> noise;
+    private List<SensorModel> light;
     private double rating;
     private float longitude;
     private float latitude;
 
-    public Restaurant() {
+    public RestaurantWithTimestamp() {
     }
 
-    public Restaurant(String name, List<Double> noise, List<Double> light, double rating, float longitude, float latitude) {
+    public RestaurantWithTimestamp(String name, List<SensorModel> noise, List<SensorModel> light, double rating, float longitude, float latitude) {
         this.name = name;
         this.noise = noise;
         this.light = light;
@@ -30,19 +30,19 @@ public class Restaurant {
         this.name = name;
     }
 
-    public List<Double> getNoise() {
+    public List<SensorModel> getNoiseList() {
         return noise;
     }
 
-    public void setNoise(List<Double> noise) {
+    public void setNoiseList(List<SensorModel> noise) {
         this.noise = noise;
     }
 
-    public List<Double> getLight() {
+    public List<SensorModel> getLightList() {
         return light;
     }
 
-    public void setLight(List<Double> light) {
+    public void setLightList(List<SensorModel> light) {
         this.light = light;
     }
 
