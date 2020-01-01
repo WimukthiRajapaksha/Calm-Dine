@@ -18,7 +18,13 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 
+import com.example.calmdine.Interface.OnCheckingTaskCompleted;
+import com.example.calmdine.Interface.OnRetrievingTaskCompleted;
+import com.example.calmdine.Restaurant.CheckNearbyPlaceExistence;
+import com.example.calmdine.Restaurant.GetNearbyPlacesData;
+import com.example.calmdine.Restaurant.GetNearestPlaceData;
 import com.example.calmdine.ServicesFire.BackendServices;
+import com.example.calmdine.models.Place;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
 import com.firebase.geofire.LocationCallback;
@@ -27,6 +33,8 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
+import com.google.android.gms.common.api.internal.ConnectionCallbacks;
+import com.google.android.gms.common.api.internal.OnConnectionFailedListener;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
@@ -40,6 +48,8 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -74,7 +84,7 @@ import android.widget.Toast;
 
 import java.util.Locale;
 
-public class HomeActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
+public class HomeActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, com.google.android.gms.location.LocationListener, OnRetrievingTaskCompleted, OnCheckingTaskCompleted, ConnectionCallbacks, OnConnectionFailedListener {
 
     FirebaseDatabase firebaseDatabase;
     FirebaseAuth mAuth;
@@ -114,6 +124,16 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
     private static final float DEFAULT_ZOOM = 10f;
 
     private GoogleApiClient mGoogleApiClient;
+
+
+    private double currentLatitude, currentLongitude;
+    private Location deviceLocation;
+    private Place nearestPlace;
+    private boolean isNearRestaurant;
+
+    private final static String TAG = "HomeActivity";
+    private final static int REQUEST_CHECK_SETTINGS_GPS = 0x1;
+    private final static int REQUEST_ID_MULTIPLE_PERMISSIONS = 0x2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -166,7 +186,6 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 //            return;
 //        }
 //        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-
         setUPGClient();
         permissionCheckAndRequest();
     }
@@ -185,8 +204,11 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
             mFineLocationPermissionGranted = true;
             Log.i("permission", "inside");
             startBackgroundProcess();
+//            setUPGClient();
+            Log.d("call", "call----------");
+//            getDeviceLocation();
         }
-        Log.i("permission", "outside");
+        Log.i("call", "call-" + mGoogleApiClient.isConnected());
     }
 
     @Override
@@ -200,6 +222,8 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
                         if (permission == PackageManager.PERMISSION_GRANTED) {
                             mMicrophonePermissionGranted = true;
                             startBackgroundProcess();
+//                            setUPGClient();
+                            getDeviceLocation();
 //                            AsyncTaskRunner asyncTaskRunner = new AsyncTaskRunner(sensorManager);
 //                            asyncTaskRunner.execute();
                         } else {
@@ -219,6 +243,8 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
                             mLocationPermissionGranted = true;
                             mFineLocationPermissionGranted = true;
                             startBackgroundProcess();
+//                            setUPGClient();
+                            getDeviceLocation();
                             Log.d("permission", "onRequestPermissionsResult: Permission Granted");
                             return;
                         }
@@ -242,14 +268,15 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void setUPGClient() {
         mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .enableAutoManage(this, 0, HomeActivity.this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
+                .enableAutoManage(this, 0, this)
+                .addConnectionCallbacks(HomeActivity.this)
+                .addOnConnectionFailedListener(HomeActivity.this)
                 .addApi(LocationServices.API)
                 .build();
-
         mGoogleApiClient.connect();
+        Log.i("calling", "call-02----02 - Connected" + mGoogleApiClient.isConnected());
     }
+
 
     public void startBackgroundProcess() {
         Log.i("permission", "background");
@@ -259,11 +286,6 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
             AsyncTaskRunner asyncTaskRunner = new AsyncTaskRunner(sensorManager, mContext);
             asyncTaskRunner.execute();
         }
-    }
-
-    @Override
-    public void onLocationChanged(Location location) {
-        Log.i("Location", location.getLongitude() + " " + location.getLatitude());
     }
 
     @Override
@@ -281,92 +303,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-//    private boolean checkPermissions(){
-//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-//                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    private void requestPermissions(){
-//        ActivityCompat.requestPermissions(
-//                this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_ID
-//        );
-//    }
-
-//    @Override
-//    public void onResume(){
-//        super.onResume();
-//        if (checkPermissions()) {
-//            getLastLocation();
-//        }
-//
-//    }
-
-    private boolean isLocationEnabled(){
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(
-                LocationManager.NETWORK_PROVIDER
-        );
-    }
-
-//    @SuppressLint("MissingPermission")
-//    private void getLastLocation(){
-//        if (checkPermissions()) {
-//            if (isLocationEnabled()) {
-//                mFusedLocationClient.getLastLocation().addOnCompleteListener(
-//                        new OnCompleteListener<Location>() {
-//                            @Override
-//                            public void onComplete(@NonNull Task<Location> task) {
-//                                Location location = task.getResult();
-//                                if (location == null) {
-//                                    requestNewLocationData();
-//                                } else {
-//                                    latTextView = (location.getLatitude()+"");
-//                                    lonTextView = (location.getLongitude()+"");
-//                                }
-//                            }
-//                        }
-//                );
-//            } else {
-//                Toast.makeText(this, "Turn on location", Toast.LENGTH_LONG).show();
-//                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-//                startActivity(intent);
-//            }
-//        } else {
-//            requestPermissions();
-//        }
-//    }
-//
-//    @SuppressLint("MissingPermission")
-//    private void requestNewLocationData(){
-//
-//        LocationRequest mLocationRequest = new LocationRequest();
-//        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-//        mLocationRequest.setInterval(0);
-//        mLocationRequest.setFastestInterval(0);
-//        mLocationRequest.setNumUpdates(1);
-//
-////        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-////        mFusedLocationClient.requestLocationUpdates(mLocationRequest, (com.google.android.gms.location.LocationCallback) mLocationCallback, Looper.myLooper());
-//    }
-
-//    private LocationCallback mLocationCallback = new LocationCallback() {
-//        @Override
-//        public void onLocationResult(String key, GeoLocation location) {
-//            latTextView = (location.latitude+"");
-//            lonTextView = (location.longitude+"");
-//        }
-//
-//        @Override
-//        public void onCancelled(DatabaseError databaseError) {
-//
-//        }
-//    };
-
     public void onRecommendationList(View view) {
-//        backendServices.getAllRestaurantDetailsForRecommendation();
         Intent intent = new Intent(HomeActivity.this, RecommendationActivity.class);
         intent.putExtra("noise", spinnerNoise.getSelectedItemPosition());
         intent.putExtra("light", spinnerLight.getSelectedItemPosition());
@@ -384,25 +321,100 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private void getDeviceLocation(){
-        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+    @Override
+    public void onLocationChanged(Location location) {
+        Log.i("calling", "call-0001");
 
-        try {
-            if (mLocationPermissionGranted) {
-                Task location = mFusedLocationProviderClient.getLastLocation();
-                location.addOnCompleteListener(new OnCompleteListener() {
-                    @Override
-                    public void onComplete(@NonNull Task task) {
-                        if (task.isSuccessful()) {
-                            Location currentLocation = (Location) task.getResult();
-                            if (currentLocation != null) {
-                                moveCamera(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), DEFAULT_ZOOM);
-                            }
-                        }
-                    }
-                });
-            }
-        } catch (SecurityException e) {
+        deviceLocation = location;
+
+        if(deviceLocation != null) {
+            currentLatitude = deviceLocation.getLatitude();
+            currentLongitude = deviceLocation.getLongitude();
+
+            BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.drawable.navigation);
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(currentLatitude, currentLongitude), 15.0f));
+            MarkerOptions markerOptions = new MarkerOptions();
+            markerOptions.position(new LatLng(currentLatitude, currentLongitude));
+            markerOptions.title("You");
+            markerOptions.icon(icon);
+            mMap.addMarker(markerOptions);
+
+            getNearbyRestaurants();
+            isDeviceNearbyRestaurant();
+
+        }
+    }
+
+    private void getNearbyRestaurants() {
+        Log.i("calling", "call-01");
+        StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
+        stringBuilder.append("location=" + currentLatitude + "," + currentLongitude);
+        stringBuilder.append("&radius=1000");
+        stringBuilder.append("&type=restaurant");
+        stringBuilder.append("&key=" + getResources().getString(R.string.google_maps_key));
+
+        String url = stringBuilder.toString();
+
+        Object dataTransfer[] = new Object[2];
+        dataTransfer[0] = mMap;
+        dataTransfer[1] = url;
+
+        GetNearbyPlacesData getNearbyPlacesData = new GetNearbyPlacesData();
+        getNearbyPlacesData.execute(dataTransfer);
+    }
+
+    private void getNearestRestaurant() {
+        Log.i("calling", "call-02");
+        StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
+        stringBuilder.append("location=" + currentLatitude + "," + currentLongitude);
+        stringBuilder.append("&rankby=distance");
+        stringBuilder.append("&type=restaurant");
+        stringBuilder.append("&key=" + getResources().getString(R.string.google_maps_key));
+
+        String url = stringBuilder.toString();
+
+        Object dataTransfer[] = new Object[2];
+        dataTransfer[0] = mMap;
+        dataTransfer[1] = url;
+
+        GetNearestPlaceData getNearestPlaceData = new GetNearestPlaceData(this);
+        getNearestPlaceData.execute(dataTransfer);
+    }
+
+    @Override
+    public void onRetrievingTaskCompleted(Place place) {
+        nearestPlace = place;
+        Log.d(TAG, "onRetrievingTaskCompleted: Nearest Restaurant Name: " + nearestPlace.getName());
+    }
+
+    private void isDeviceNearbyRestaurant(){
+        StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
+        stringBuilder.append("location=" + currentLatitude + "," + currentLongitude);
+        stringBuilder.append("&radius=15");
+        stringBuilder.append("&type=restaurant");
+        stringBuilder.append("&key=" + getResources().getString(R.string.google_maps_key));
+
+        String url = stringBuilder.toString();
+
+        Object dataTransfer[] = new Object[2];
+        dataTransfer[0] = mMap;
+        dataTransfer[1] = url;
+
+        CheckNearbyPlaceExistence checkNearbyPlaceExistence = new CheckNearbyPlaceExistence(this);
+        checkNearbyPlaceExistence.execute(dataTransfer);
+    }
+
+    @Override
+    public void onCheckingTaskCompleted(boolean isNearRestaurant) {
+        this.isNearRestaurant = isNearRestaurant;
+        Log.d(TAG, "onCheckingTaskCompleted: Is Device near a Restaurant: " + this.isNearRestaurant);
+
+        //To get the nearest restaurant if the there's a restaurant in device area
+        if(isNearRestaurant) {
+            getNearestRestaurant();
+
+        } else {
+            Log.d(TAG, "onCheckingTaskCompleted: Device is not in a Restaurant");
         }
     }
 
@@ -424,7 +436,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-
+        mGoogleApiClient.connect();
     }
 
     @Override
@@ -432,80 +444,103 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-//    private void getDeviceLocation() {
-//        if(mGoogleApiClient != null) {
-//            if (mGoogleApiClient.isConnected()) {
-//                int permissionLocation = ContextCompat.checkSelfPermission(MapsActivity.this,
-//                        Manifest.permission.ACCESS_FINE_LOCATION);
-//                if (permissionLocation == PackageManager.PERMISSION_GRANTED) {
-//                    deviceLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-//                    LocationRequest locationRequest = new LocationRequest();
-//
-//                    //Refreshing location in every 3 seconds
-////                    locationRequest.setInterval(3000);
-////                    locationRequest.setFastestInterval(3000);
-//
-//                    locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-//                    LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
-//                            .addLocationRequest(locationRequest);
-//                    builder.setAlwaysShow(true);
-//                    LocationServices.FusedLocationApi
-//                            .requestLocationUpdates(mGoogleApiClient, locationRequest, this);
-//                    PendingResult<LocationSettingsResult> result =
-//                            LocationServices.SettingsApi
-//                                    .checkLocationSettings(mGoogleApiClient, builder.build());
-//                    result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
-//
-//                        @Override
-//                        public void onResult(LocationSettingsResult result) {
-//                            final Status status = result.getStatus();
-//                            switch (status.getStatusCode()) {
-//                                case LocationSettingsStatusCodes.SUCCESS:
-//                                    // All location settings are satisfied.
-//                                    // You can initialize location requests here.
-//                                    int permissionLocation = ContextCompat
-//                                            .checkSelfPermission(MapsActivity.this,
-//                                                    Manifest.permission.ACCESS_FINE_LOCATION);
-//                                    if (permissionLocation == PackageManager.PERMISSION_GRANTED) {
-//
-//
-//                                        deviceLocation = LocationServices.FusedLocationApi
-//                                                .getLastLocation(mGoogleApiClient);
-//
-//
-//                                    }
-//                                    break;
-//                                case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-//                                    // Location settings are not satisfied.
-//                                    // But could be fixed by showing the user a dialog.
-//                                    try {
-//                                        // Show the dialog by calling startResolutionForResult(),
-//                                        // and check the result in onActivityResult().
-//                                        // Ask to turn on GPS automatically
-//                                        status.startResolutionForResult(MapsActivity.this,
-//                                                REQUEST_CHECK_SETTINGS_GPS);
-//
-//
-//                                    } catch (IntentSender.SendIntentException e) {
-//                                        // Ignore the error.
-//                                    }
-//
-//
-//                                    break;
-//                                case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-//                                    // Location settings are not satisfied.
-//                                    // However, we have no way
-//                                    // to fix the
-//                                    // settings so we won't show the dialog.
-//                                    // finish();
-//                                    break;
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onPause() {
+        Log.i("calling", "call-02----01-disconnected");
+        super.onPause();
+        mGoogleApiClient.stopAutoManage(HomeActivity.this);
+        mGoogleApiClient.disconnect();
+    }
+
+    private void getDeviceLocation() {
+        Log.i("calling", "call-02----");
+//        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+//        try {
+//            if (mLocationPermissionGranted) {
+//                Log.i("calling", "call-02----01");
+//                Task location = mFusedLocationProviderClient.getLastLocation();
+//                location.addOnCompleteListener(new OnCompleteListener() {
+//                    @Override
+//                    public void onComplete(@NonNull Task task) {
+//                        if (task.isSuccessful()) {
+//                            Location currentLocation = (Location) task.getResult();
+//                            if (currentLocation != null) {
+//                                moveCamera(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), DEFAULT_ZOOM);
 //                            }
 //                        }
-//                    });
-//
-//                }
+//                    }
+//                });
 //            }
+//        } catch (SecurityException e) {
 //        }
-//    }
+        if(mGoogleApiClient != null) {
+            Log.i("calling", "call-02----02 - connection-checker");
+            Log.i("calling", String.valueOf("call-02----02 - connection-checker ----- " + mGoogleApiClient.isConnecting()));
+            Log.i("calling", String.valueOf("call-02----02 - connection-checker ----- " + mGoogleApiClient.isConnected()));
+            if (mGoogleApiClient.isConnected()) {
+                Log.i("calling", "call-02----02-01");
+                int permissionLocation = ContextCompat.checkSelfPermission(HomeActivity.this, Manifest.permission.ACCESS_FINE_LOCATION);
+                if (permissionLocation == PackageManager.PERMISSION_GRANTED) {
+                    deviceLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+                    LocationRequest locationRequest = new LocationRequest();
+
+                    locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+                    LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(locationRequest);
+                    builder.setAlwaysShow(true);
+                    LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, locationRequest, (com.google.android.gms.location.LocationListener) HomeActivity.this);
+                    PendingResult<LocationSettingsResult> result = LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient, builder.build());
+                    result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
+
+                        @Override
+                        public void onResult(LocationSettingsResult result) {
+                            final Status status = result.getStatus();
+                            switch (status.getStatusCode()) {
+                                case LocationSettingsStatusCodes.SUCCESS:
+                                    // All location settings are satisfied.
+                                    // You can initialize location requests here.
+                                    int permissionLocation = ContextCompat.checkSelfPermission(HomeActivity.this, Manifest.permission.ACCESS_FINE_LOCATION);
+                                    if (permissionLocation == PackageManager.PERMISSION_GRANTED) {
+                                        deviceLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+                                    }
+                                    break;
+                                case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                                    // Location settings are not satisfied.
+                                    // But could be fixed by showing the user a dialog.
+                                    try {
+                                        // Show the dialog by calling startResolutionForResult(),
+                                        // and check the result in onActivityResult().
+                                        // Ask to turn on GPS automatically
+                                        status.startResolutionForResult(HomeActivity.this, REQUEST_CHECK_SETTINGS_GPS);
+                                    } catch (IntentSender.SendIntentException e) {
+                                        // Ignore the error.
+                                    }
+                                    break;
+                                case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                                    // Location settings are not satisfied.
+                                    // However, we have no way
+                                    // to fix the
+                                    // settings so we won't show the dialog.
+                                    // finish();
+                                    break;
+                            }
+                        }
+                    });
+
+                }
+            }
+            Log.i("calling", String.valueOf("call-02----02 - connection-checker == " + mGoogleApiClient.isConnected()));
+//            if (mGoogleApiClient.isConnected()) {
+//            }
+        }
+    }
+
+    public void innerMethod() {
+    }
 
 }
