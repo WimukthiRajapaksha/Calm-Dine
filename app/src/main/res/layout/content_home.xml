@@ -48,7 +48,7 @@
             android:id="@+id/mapView"
             android:layout_width="match_parent"
             android:layout_margin="2dp"
-            android:layout_height="350dp"/>
+            android:layout_height="450dp"/>
 
         <LinearLayout
             android:layout_width="match_parent"

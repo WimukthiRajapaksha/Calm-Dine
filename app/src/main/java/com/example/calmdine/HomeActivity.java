@@ -7,6 +7,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.hardware.SensorManager;
 import android.location.Criteria;
@@ -21,10 +22,18 @@ import com.example.calmdine.ServicesFire.BackendServices;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
 import com.firebase.geofire.LocationCallback;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResult;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -65,7 +74,7 @@ import android.widget.Toast;
 
 import java.util.Locale;
 
-public class HomeActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener {
+public class HomeActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
 
     FirebaseDatabase firebaseDatabase;
     FirebaseAuth mAuth;
@@ -91,16 +100,20 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1234;
     private final int MY_PERMISSIONS_REQUEST_AUDIO = 123;
+    private final int FINE_LOCATION_PERMISSION_REQUEST_CODE = 1221;
 
 //    FusedLocationProviderClient mFusedLocationClient;
     private FusedLocationProviderClient mFusedLocationProviderClient;
     private boolean mLocationPermissionGranted;
+    private boolean mFineLocationPermissionGranted;
     private boolean mMicrophonePermissionGranted;
     protected LocationManager locationManager;
     private BackendServices backendServices;
 
     private Location currentLocation;
     private static final float DEFAULT_ZOOM = 10f;
+
+    private GoogleApiClient mGoogleApiClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,6 +152,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 
 //        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         mLocationPermissionGranted = false;
+        mFineLocationPermissionGranted = false;
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 //        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -153,6 +167,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 //        }
 //        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
 
+        setUPGClient();
         permissionCheckAndRequest();
     }
 
@@ -167,6 +182,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         } else {
             mMicrophonePermissionGranted = true;
             mLocationPermissionGranted = true;
+            mFineLocationPermissionGranted = true;
             Log.i("permission", "inside");
             startBackgroundProcess();
         }
@@ -201,6 +217,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
                     for(int permission: grantResults) {
                         if(permission == PackageManager.PERMISSION_GRANTED) {
                             mLocationPermissionGranted = true;
+                            mFineLocationPermissionGranted = true;
                             startBackgroundProcess();
                             Log.d("permission", "onRequestPermissionsResult: Permission Granted");
                             return;
@@ -208,14 +225,37 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                 }
             }
+//            case FINE_LOCATION_PERMISSION_REQUEST_CODE: {
+//                if(grantResults.length > 0) {
+//                    for(int permission: grantResults) {
+//                        if(permission == PackageManager.PERMISSION_GRANTED) {
+//                            mFineLocationPermissionGranted = true;
+//                            startBackgroundProcess();
+//                            Log.d("permission", "onRequestPermissionsResult: Permission Granted");
+//                            return;
+//                        }
+//                    }
+//                }
+//            }
         }
+    }
+
+    private void setUPGClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .enableAutoManage(this, 0, HomeActivity.this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+
+        mGoogleApiClient.connect();
     }
 
     public void startBackgroundProcess() {
         Log.i("permission", "background");
         Log.i("permission", String.valueOf(mLocationPermissionGranted));
         Log.i("permission", String.valueOf(mMicrophonePermissionGranted));
-        if(mLocationPermissionGranted && mMicrophonePermissionGranted) {
+        if(mLocationPermissionGranted && mMicrophonePermissionGranted && mFineLocationPermissionGranted) {
             AsyncTaskRunner asyncTaskRunner = new AsyncTaskRunner(sensorManager, mContext);
             asyncTaskRunner.execute();
         }
@@ -340,7 +380,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         if(mLocationPermissionGranted) {
             getDeviceLocation();
             mMap.setMyLocationEnabled(true);
-            mMap.getUiSettings().setMyLocationButtonEnabled(false);
+            mMap.getUiSettings().setMyLocationButtonEnabled(true);
         }
     }
 
@@ -355,7 +395,9 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
                     public void onComplete(@NonNull Task task) {
                         if (task.isSuccessful()) {
                             Location currentLocation = (Location) task.getResult();
-                            moveCamera(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), DEFAULT_ZOOM);
+                            if (currentLocation != null) {
+                                moveCamera(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), DEFAULT_ZOOM);
+                            }
                         }
                     }
                 });
@@ -374,5 +416,96 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
                 .title(title);
         mMap.addMarker(markerOptions);
     }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+//    private void getDeviceLocation() {
+//        if(mGoogleApiClient != null) {
+//            if (mGoogleApiClient.isConnected()) {
+//                int permissionLocation = ContextCompat.checkSelfPermission(MapsActivity.this,
+//                        Manifest.permission.ACCESS_FINE_LOCATION);
+//                if (permissionLocation == PackageManager.PERMISSION_GRANTED) {
+//                    deviceLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+//                    LocationRequest locationRequest = new LocationRequest();
+//
+//                    //Refreshing location in every 3 seconds
+////                    locationRequest.setInterval(3000);
+////                    locationRequest.setFastestInterval(3000);
+//
+//                    locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+//                    LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
+//                            .addLocationRequest(locationRequest);
+//                    builder.setAlwaysShow(true);
+//                    LocationServices.FusedLocationApi
+//                            .requestLocationUpdates(mGoogleApiClient, locationRequest, this);
+//                    PendingResult<LocationSettingsResult> result =
+//                            LocationServices.SettingsApi
+//                                    .checkLocationSettings(mGoogleApiClient, builder.build());
+//                    result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
+//
+//                        @Override
+//                        public void onResult(LocationSettingsResult result) {
+//                            final Status status = result.getStatus();
+//                            switch (status.getStatusCode()) {
+//                                case LocationSettingsStatusCodes.SUCCESS:
+//                                    // All location settings are satisfied.
+//                                    // You can initialize location requests here.
+//                                    int permissionLocation = ContextCompat
+//                                            .checkSelfPermission(MapsActivity.this,
+//                                                    Manifest.permission.ACCESS_FINE_LOCATION);
+//                                    if (permissionLocation == PackageManager.PERMISSION_GRANTED) {
+//
+//
+//                                        deviceLocation = LocationServices.FusedLocationApi
+//                                                .getLastLocation(mGoogleApiClient);
+//
+//
+//                                    }
+//                                    break;
+//                                case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+//                                    // Location settings are not satisfied.
+//                                    // But could be fixed by showing the user a dialog.
+//                                    try {
+//                                        // Show the dialog by calling startResolutionForResult(),
+//                                        // and check the result in onActivityResult().
+//                                        // Ask to turn on GPS automatically
+//                                        status.startResolutionForResult(MapsActivity.this,
+//                                                REQUEST_CHECK_SETTINGS_GPS);
+//
+//
+//                                    } catch (IntentSender.SendIntentException e) {
+//                                        // Ignore the error.
+//                                    }
+//
+//
+//                                    break;
+//                                case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+//                                    // Location settings are not satisfied.
+//                                    // However, we have no way
+//                                    // to fix the
+//                                    // settings so we won't show the dialog.
+//                                    // finish();
+//                                    break;
+//                            }
+//                        }
+//                    });
+//
+//                }
+//            }
+//        }
+//    }
 
 }

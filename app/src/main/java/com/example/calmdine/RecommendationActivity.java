@@ -177,25 +177,30 @@ public class RecommendationActivity extends AppCompatActivity {
                     while (arrLightWithTimeStamp.iterator().hasNext()) {
                         Log.i("time--==", "0");
                         DataSnapshot snapshotLight = arrLightWithTimeStamp.iterator().next();
-//                        Log.i("timestamp--", String.valueOf(snapshotLight.child("timeStamp").getValue()));
-                        SensorModel lightTemp = new SensorModel(
-                                nameSensor,
-                                Double.parseDouble(String.valueOf(snapshotLight.child("light").getValue())),
-                                Double.valueOf(0),
-                                Timestamp.valueOf(String.valueOf(snapshotLight.child("timeStamp").getValue()))
-                        );
-                        sensorModelsForLight.add(lightTemp);
+                        if (!(snapshotLight.child("light").getValue().equals("0.0"))) {
+                            SensorModel lightTemp = new SensorModel(
+                                    nameSensor,
+                                    Double.parseDouble(String.valueOf(snapshotLight.child("light").getValue())),
+                                    Double.valueOf(0),
+                                    Timestamp.valueOf(String.valueOf(snapshotLight.child("timeStamp").getValue()))
+                            );
+                            sensorModelsForLight.add(lightTemp);
+                        }
                     }
                     while (arrNoiseWithTimeStamp.iterator().hasNext()) {
                         Log.i("time----", "0");
-                        DataSnapshot snapshotLight = arrNoiseWithTimeStamp.iterator().next();
-                        SensorModel noiseTemp = new SensorModel(
-                                nameSensor,
-                                Double.valueOf(0),
-                                Double.parseDouble(String.valueOf(snapshotLight.child("noise").getValue())),
-                                Timestamp.valueOf(String.valueOf(snapshotLight.child("timeStamp").getValue()))
-                        );
-                        sensorModelsForNoise.add(noiseTemp);
+                        DataSnapshot snapshotNoise = arrNoiseWithTimeStamp.iterator().next();
+                        if ((!(snapshotNoise.child("noise").getValue().equals("-Infinity"))) && (!(snapshotNoise.child("noise").getValue().equals("0.0")))) {
+                            Log.i("timestamp--", "Here");
+                            SensorModel noiseTemp = new SensorModel(
+                                    nameSensor,
+                                    Double.valueOf(0),
+                                    Double.parseDouble(String.valueOf(snapshotNoise.child("noise").getValue())),
+                                    Timestamp.valueOf(String.valueOf(snapshotNoise.child("timeStamp").getValue()))
+                            );
+                            sensorModelsForNoise.add(noiseTemp);
+                        }
+                        Log.i("timestamp--", String.valueOf((snapshotNoise.child("noise").getValue())));
                     }
 //                    while (restaurantWithTimestampList.iterator().hasNext()) {
 //                        RestaurantWithTimestamp currentRestTimestamp = restaurantWithTimestampList.iterator().next();
