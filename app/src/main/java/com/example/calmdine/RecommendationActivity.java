@@ -83,7 +83,7 @@ public class RecommendationActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerViewRecommendations);
         recyclerView.setHasFixedSize(true);
 
-        backendServices = new BackendServices();
+        backendServices = new BackendServices(this);
 
         firebaseDatabase = FirebaseDatabase.getInstance();
         databaseReference = firebaseDatabase.getReference();
@@ -150,11 +150,11 @@ public class RecommendationActivity extends AppCompatActivity {
     }
 
     public void loadRestaurantData() {
-
         restaurantRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
+                restaurantWithTimestampList.clear();
                 Iterable<DataSnapshot> arrLightWithTimeStamp = null;
                 Iterable<DataSnapshot> arrNoiseWithTimeStamp = null;
                 List<String> arrNames = new ArrayList<>();
@@ -167,41 +167,42 @@ public class RecommendationActivity extends AppCompatActivity {
 
                     Log.i("time--00", "0");
 //                    Log.i("Object--", String.valueOf(postSnapshot.child("light")));
-                    String nameSensor = postSnapshot.child("name").getValue().toString();
-                    arrLightWithTimeStamp = postSnapshot.child("light").getChildren();
-                    arrNoiseWithTimeStamp = postSnapshot.child("noise").getChildren();
-                    arrNames.add(postSnapshot.child("name").getValue().toString());
+                    try {
+                        String nameSensor = postSnapshot.child("name").getValue().toString();
+                        arrLightWithTimeStamp = postSnapshot.child("light").getChildren();
+                        arrNoiseWithTimeStamp = postSnapshot.child("noise").getChildren();
+                        arrNames.add(postSnapshot.child("name").getValue().toString());
 
 
 
-                    while (arrLightWithTimeStamp.iterator().hasNext()) {
-                        Log.i("time--==", "0");
-                        DataSnapshot snapshotLight = arrLightWithTimeStamp.iterator().next();
-                        if (!(snapshotLight.child("light").getValue().equals("0.0"))) {
-                            SensorModel lightTemp = new SensorModel(
-                                    nameSensor,
-                                    Double.parseDouble(String.valueOf(snapshotLight.child("light").getValue())),
-                                    Double.valueOf(0),
-                                    Timestamp.valueOf(String.valueOf(snapshotLight.child("timeStamp").getValue()))
-                            );
-                            sensorModelsForLight.add(lightTemp);
+                        while (arrLightWithTimeStamp.iterator().hasNext()) {
+                            Log.i("time--==", "0");
+                            DataSnapshot snapshotLight = arrLightWithTimeStamp.iterator().next();
+                            if (!(snapshotLight.child("light").getValue().equals("0.0"))) {
+                                SensorModel lightTemp = new SensorModel(
+                                        nameSensor,
+                                        Double.parseDouble(String.valueOf(snapshotLight.child("light").getValue())),
+                                        Double.valueOf(0),
+                                        Timestamp.valueOf(String.valueOf(snapshotLight.child("timeStamp").getValue()))
+                                );
+                                sensorModelsForLight.add(lightTemp);
+                            }
                         }
-                    }
-                    while (arrNoiseWithTimeStamp.iterator().hasNext()) {
-                        Log.i("time----", "0");
-                        DataSnapshot snapshotNoise = arrNoiseWithTimeStamp.iterator().next();
-                        if ((!(snapshotNoise.child("noise").getValue().equals("-Infinity"))) && (!(snapshotNoise.child("noise").getValue().equals("0.0")))) {
-                            Log.i("timestamp--", "Here");
-                            SensorModel noiseTemp = new SensorModel(
-                                    nameSensor,
-                                    Double.valueOf(0),
-                                    Double.parseDouble(String.valueOf(snapshotNoise.child("noise").getValue())),
-                                    Timestamp.valueOf(String.valueOf(snapshotNoise.child("timeStamp").getValue()))
-                            );
-                            sensorModelsForNoise.add(noiseTemp);
+                        while (arrNoiseWithTimeStamp.iterator().hasNext()) {
+                            Log.i("time----", "0");
+                            DataSnapshot snapshotNoise = arrNoiseWithTimeStamp.iterator().next();
+                            if ((!(snapshotNoise.child("noise").getValue().equals("-Infinity"))) && (!(snapshotNoise.child("noise").getValue().equals("0.0")))) {
+                                Log.i("timestamp--", "Here");
+                                SensorModel noiseTemp = new SensorModel(
+                                        nameSensor,
+                                        Double.valueOf(0),
+                                        Double.parseDouble(String.valueOf(snapshotNoise.child("noise").getValue())),
+                                        Timestamp.valueOf(String.valueOf(snapshotNoise.child("timeStamp").getValue()))
+                                );
+                                sensorModelsForNoise.add(noiseTemp);
+                            }
+                            Log.i("timestamp--", String.valueOf((snapshotNoise.child("noise").getValue())));
                         }
-                        Log.i("timestamp--", String.valueOf((snapshotNoise.child("noise").getValue())));
-                    }
 //                    while (restaurantWithTimestampList.iterator().hasNext()) {
 //                        RestaurantWithTimestamp currentRestTimestamp = restaurantWithTimestampList.iterator().next();
 ////                        Log.i("time", String.valueOf(currentRestTimestamp.getLight()));
@@ -210,17 +211,21 @@ public class RecommendationActivity extends AppCompatActivity {
 //                        }
 //
 //                    }
-                    RestaurantWithTimestamp restTime = new RestaurantWithTimestamp(
-                            postSnapshot.getKey(),
-                            sensorModelsForNoise,
-                            sensorModelsForLight,
-                            Double.parseDouble(postSnapshot.child("rating").getValue().toString()),
-                            Float.parseFloat(postSnapshot.child("longitude").getValue().toString()),
-                            Float.parseFloat(postSnapshot.child("latitude").getValue().toString())
-                    );
-                    Log.i("time---------", String.valueOf(restTime.getLightList().size()));
-                    restaurantWithTimestampList.add(restTime);
-                    Log.i("time--++", "1");
+                        RestaurantWithTimestamp restTime = new RestaurantWithTimestamp(
+                                postSnapshot.getKey(),
+                                sensorModelsForNoise,
+                                sensorModelsForLight,
+                                Double.parseDouble(postSnapshot.child("rating").getValue().toString()),
+                                Float.parseFloat(postSnapshot.child("longitude").getValue().toString()),
+                                Float.parseFloat(postSnapshot.child("latitude").getValue().toString())
+                        );
+                        Log.i("time---------", String.valueOf(restTime.getRating()));
+                        restaurantWithTimestampList.add(restTime);
+                        Log.i("time--++", "1");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
                 }
                 listCompleted = true;
                 Log.i("time--++--", "1");
@@ -293,7 +298,7 @@ public class RecommendationActivity extends AppCompatActivity {
 //    }
 
     public void updateRecyclerView(final List<AdapterModel> adapterModels) {
-//        Log.i("time--000", String.valueOf(restaurantWithTimestamps.size()));
+        Log.i("time--000", String.valueOf(adapterModels.size()));
         if (initializedUiList) {
             RecommendationActivity.this.runOnUiThread(new Runnable() {
                 @Override
@@ -315,10 +320,11 @@ public class RecommendationActivity extends AppCompatActivity {
 
     public void onFilterChanged(double noise, double light) {
         restaurantsForUi.clear();
+        Log.i("Size--", noise + " " + light);
         Log.i("Size--", String.valueOf(restaurantWithTimestampList.size()));
-        restaurantsForUi.clear();
         for (RestaurantWithTimestamp restaurant: restaurantWithTimestampList) {
             Log.i("size-----", restaurant.getName());
+            Log.i("size-----", String.valueOf(restaurant.getRating()));
             float lightSum = 0f;
             for (SensorModel lightVal: restaurant.getLightList()) {
                 lightSum += lightVal.getLight();
@@ -334,7 +340,7 @@ public class RecommendationActivity extends AppCompatActivity {
                         restaurant.getName(),
                         lightSum/restaurant.getLightList().size(),
                         noiseSum/restaurant.getNoiseList().size(),
-                        1.5,
+                        restaurant.getRating(),
                         null,
                         restaurant.getLongitude(),
                         restaurant.getLatitude()
@@ -357,18 +363,5 @@ public class RecommendationActivity extends AppCompatActivity {
         }
         updateRecyclerView(restaurantsForUi);
 //        Log.i(restaurantsForUi);
-    }
-
-
-
-    public void addRestaurant(String name, double noise, double light, double rating) {
-        DatabaseReference restaurantRef = firebaseDatabase.getReference().child("restaurants");
-        DatabaseReference newRestaurantRef = restaurantRef.child(name);
-        Map<String, Double> addRestaurantData = new HashMap<>();
-        addRestaurantData.put("noise", noise);
-        addRestaurantData.put("light", light);
-        addRestaurantData.put("rating", rating);
-
-        newRestaurantRef.setValue(addRestaurantData);
     }
 }
