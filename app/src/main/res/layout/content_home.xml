@@ -102,6 +102,8 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="40dp"
             android:layout_marginRight="40dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/btn_rounded_recommendation"
             android:textSize="30sp"
             android:textAllCaps="false"
             android:onClick="onRecommendationList"

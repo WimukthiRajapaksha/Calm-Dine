@@ -15,6 +15,12 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.example.calmdine.ServicesFire.BackendServices;
 import com.example.calmdine.models.AdapterModel;
 import com.example.calmdine.models.Restaurant;
@@ -25,6 +31,10 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -52,15 +62,24 @@ public class RecommendationActivity extends AppCompatActivity {
     private boolean listCompleted = false;
     List<RestaurantWithTimestamp> restaurantWithTimestampList = new ArrayList<>();
 
+    double locationDataLong;
+    double locationDataLat;
+
+    ArrayList<String> nearbyRestaurantsList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recommendation);
 
+        nearbyRestaurantsList = new ArrayList<>();
+
         Intent intent = getIntent();
         int noise = intent.getIntExtra("noise", 0);
         int light = intent.getIntExtra("light", 0);
+
+        locationDataLong = intent.getDoubleExtra("locationDataLong", 100);
+        locationDataLat = intent.getDoubleExtra("locationDataLat", 100);
 
         firebaseDatabase = FirebaseDatabase.getInstance();
         restaurantsList = new ArrayList<>();
@@ -91,6 +110,46 @@ public class RecommendationActivity extends AppCompatActivity {
         restaurantRef = databaseReference.child("restaurants");
 
         loadRestaurantData();
+
+        final String urlRestaurants = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + locationDataLat + "," + locationDataLong + "&radius=1000&type=restaurant&key=" + getResources().getString(R.string.google_maps_key);
+        RequestQueue queueRestaurants = Volley.newRequestQueue(RecommendationActivity.this);
+
+        JsonObjectRequest getRequest = new JsonObjectRequest(Request.Method.GET, urlRestaurants, null,
+                new Response.Listener<JSONObject>()
+                {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        // display response
+                        Log.d("Response_01", urlRestaurants);
+                        Log.d("Response_01", response.toString());
+
+                        try {
+                            JSONArray resultsArray = ((JSONArray) response.getJSONArray("results"));
+                            for (int i=0; i< resultsArray.length(); i++) {
+                                String name = resultsArray.getJSONObject(i).getString("name");
+//                                Log.d("Response_01-name", name);
+                                nearbyRestaurantsList.add(name);
+//                                Log.d("Response_01-", String.valueOf(nearbyRestaurantsList.size()));
+                            }
+                            Log.d("Response_01-03", String.valueOf(nearbyRestaurantsList.size()));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                },
+                new Response.ErrorListener()
+                {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.d("Error.Response", String.valueOf(error));
+                    }
+                }
+        );
+
+        Log.d("Response_01-02", String.valueOf(nearbyRestaurantsList.size()));
+
+// add it to the RequestQueue
+        queueRestaurants.add(getRequest);
 
         spinnerLight.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -148,6 +207,7 @@ public class RecommendationActivity extends AppCompatActivity {
             }
 
         });
+
 //        addRestaurant("Wimu", 4.5, 3.1, 9.4);
 //        addRestaurant("wimukthi", 5.0, 7.3, 8.8);
 //        addRestaurant("rajapaksha", 5.4, 8.5, 7.3);
@@ -327,19 +387,33 @@ public class RecommendationActivity extends AppCompatActivity {
         restaurantsForUi.clear();
         Log.i("Size--", noise + " " + light);
         Log.i("Size--", String.valueOf(restaurantWithTimestampList.size()));
+
+
+
+
+
+        Log.d("Response_01-05", String.valueOf(nearbyRestaurantsList.size()));
+
+
+
+
+
         for (RestaurantWithTimestamp restaurant: restaurantWithTimestampList) {
-            Log.i("size-----", restaurant.getName());
-            Log.i("size-----", String.valueOf(restaurant.getRating()));
-            float lightSum = 0f;
-            for (SensorModel lightVal: restaurant.getLightList()) {
-                lightSum += lightVal.getLight();
-            }
-            Log.i("size-----", String.valueOf(lightSum));
-            float noiseSum = 0f;
-            for (SensorModel noiseVal: restaurant.getNoiseList()) {
-                noiseSum += noiseVal.getNoise();
-            }
-            Log.i("size-----", String.valueOf(noiseSum));
+
+
+            if (nearbyRestaurantsList.indexOf(restaurant.getName()) != -1) {
+                Log.i("size-----", restaurant.getName());
+                Log.i("size-----", String.valueOf(restaurant.getRating()));
+                float lightSum = 0f;
+                for (SensorModel lightVal: restaurant.getLightList()) {
+                    lightSum += lightVal.getLight();
+                }
+                Log.i("size-----", String.valueOf(lightSum));
+                float noiseSum = 0f;
+                for (SensorModel noiseVal: restaurant.getNoiseList()) {
+                    noiseSum += noiseVal.getNoise();
+                }
+                Log.i("size-----", String.valueOf(noiseSum));
 
 
 
@@ -356,131 +430,137 @@ public class RecommendationActivity extends AppCompatActivity {
 //                restaurantsForUi.add(adapterModel);
 //            }
 
-            float lightSumAvg = lightSum/restaurant.getLightList().size();
-            float noiseSumAvg = noiseSum/restaurant.getNoiseList().size();
+                float lightSumAvg = lightSum/restaurant.getLightList().size();
+                float noiseSumAvg = noiseSum/restaurant.getNoiseList().size();
 //-----------------------
-            if (noise == 0 && light == 0) {
-                if (noiseSumAvg < 33 && lightSumAvg < 80) {
-                    AdapterModel adapterModel = new AdapterModel(
-                            restaurant.getName(),
-                            lightSumAvg,
-                            noiseSumAvg,
-                            restaurant.getRating(),
-                            null,
-                            restaurant.getLongitude(),
-                            restaurant.getLatitude()
-                    );
-                    restaurantsForUi.add(adapterModel);
+                if (noise == 0 && light == 0) {
+                    if (noiseSumAvg < 33 && lightSumAvg < 80) {
+                        AdapterModel adapterModel = new AdapterModel(
+                                restaurant.getName(),
+                                lightSumAvg,
+                                noiseSumAvg,
+                                restaurant.getRating(),
+                                null,
+                                restaurant.getLongitude(),
+                                restaurant.getLatitude()
+                        );
+                        restaurantsForUi.add(adapterModel);
+                    }
+                } else if (noise == 0 && light == 1) {
+                    if (noiseSumAvg < 33 && lightSumAvg > 80 && lightSumAvg < 500) {
+                        AdapterModel adapterModel = new AdapterModel(
+                                restaurant.getName(),
+                                lightSumAvg,
+                                noiseSumAvg,
+                                restaurant.getRating(),
+                                null,
+                                restaurant.getLongitude(),
+                                restaurant.getLatitude()
+                        );
+                        restaurantsForUi.add(adapterModel);
+                    }
+                } else if (noise == 0 && light == 2) {
+                    if (noiseSumAvg < 33 && lightSumAvg > 500) {
+                        AdapterModel adapterModel = new AdapterModel(
+                                restaurant.getName(),
+                                lightSumAvg,
+                                noiseSumAvg,
+                                restaurant.getRating(),
+                                null,
+                                restaurant.getLongitude(),
+                                restaurant.getLatitude()
+                        );
+                        restaurantsForUi.add(adapterModel);
+                    }
                 }
-            } else if (noise == 0 && light == 1) {
-                if (noiseSumAvg < 33 && lightSumAvg > 80 && lightSumAvg < 500) {
-                    AdapterModel adapterModel = new AdapterModel(
-                            restaurant.getName(),
-                            lightSumAvg,
-                            noiseSumAvg,
-                            restaurant.getRating(),
-                            null,
-                            restaurant.getLongitude(),
-                            restaurant.getLatitude()
-                    );
-                    restaurantsForUi.add(adapterModel);
-                }
-            } else if (noise == 0 && light == 2) {
-                if (noiseSumAvg < 33 && lightSumAvg > 500) {
-                    AdapterModel adapterModel = new AdapterModel(
-                            restaurant.getName(),
-                            lightSumAvg,
-                            noiseSumAvg,
-                            restaurant.getRating(),
-                            null,
-                            restaurant.getLongitude(),
-                            restaurant.getLatitude()
-                    );
-                    restaurantsForUi.add(adapterModel);
-                }
-            }
 //            --------------------------
-            else if (noise == 1 && light == 0) {
-                if (noiseSumAvg > 30 && noiseSumAvg < 75 && lightSumAvg < 80 ) {
-                    AdapterModel adapterModel = new AdapterModel(
-                            restaurant.getName(),
-                            lightSumAvg,
-                            noiseSumAvg,
-                            restaurant.getRating(),
-                            null,
-                            restaurant.getLongitude(),
-                            restaurant.getLatitude()
-                    );
-                    restaurantsForUi.add(adapterModel);
+                else if (noise == 1 && light == 0) {
+                    if (noiseSumAvg > 30 && noiseSumAvg < 75 && lightSumAvg < 80 ) {
+                        AdapterModel adapterModel = new AdapterModel(
+                                restaurant.getName(),
+                                lightSumAvg,
+                                noiseSumAvg,
+                                restaurant.getRating(),
+                                null,
+                                restaurant.getLongitude(),
+                                restaurant.getLatitude()
+                        );
+                        restaurantsForUi.add(adapterModel);
+                    }
+                } else if (noise == 1 && light == 1) {
+                    if (noiseSumAvg > 30 && noiseSumAvg < 75 && lightSumAvg > 80 && lightSumAvg < 500 ) {
+                        AdapterModel adapterModel = new AdapterModel(
+                                restaurant.getName(),
+                                lightSumAvg,
+                                noiseSumAvg,
+                                restaurant.getRating(),
+                                null,
+                                restaurant.getLongitude(),
+                                restaurant.getLatitude()
+                        );
+                        restaurantsForUi.add(adapterModel);
+                    }
+                } else if (noise == 1 && light == 2) {
+                    if (noiseSumAvg > 30 && noiseSumAvg < 75 && lightSumAvg > 500) {
+                        AdapterModel adapterModel = new AdapterModel(
+                                restaurant.getName(),
+                                lightSumAvg,
+                                noiseSumAvg,
+                                restaurant.getRating(),
+                                null,
+                                restaurant.getLongitude(),
+                                restaurant.getLatitude()
+                        );
+                        restaurantsForUi.add(adapterModel);
+                    }
                 }
-            } else if (noise == 1 && light == 1) {
-                if (noiseSumAvg > 30 && noiseSumAvg < 75 && lightSumAvg > 80 && lightSumAvg < 500 ) {
-                    AdapterModel adapterModel = new AdapterModel(
-                            restaurant.getName(),
-                            lightSumAvg,
-                            noiseSumAvg,
-                            restaurant.getRating(),
-                            null,
-                            restaurant.getLongitude(),
-                            restaurant.getLatitude()
-                    );
-                    restaurantsForUi.add(adapterModel);
-                }
-            } else if (noise == 1 && light == 2) {
-                if (noiseSumAvg > 30 && noiseSumAvg < 75 && lightSumAvg > 500) {
-                    AdapterModel adapterModel = new AdapterModel(
-                            restaurant.getName(),
-                            lightSumAvg,
-                            noiseSumAvg,
-                            restaurant.getRating(),
-                            null,
-                            restaurant.getLongitude(),
-                            restaurant.getLatitude()
-                    );
-                    restaurantsForUi.add(adapterModel);
-                }
-            }
 //            ---------------------------
-            else if (noise == 2 && light == 0) {
-                if (noiseSumAvg > 75 && lightSumAvg < 80) {
-                    AdapterModel adapterModel = new AdapterModel(
-                            restaurant.getName(),
-                            lightSumAvg,
-                            noiseSumAvg,
-                            restaurant.getRating(),
-                            null,
-                            restaurant.getLongitude(),
-                            restaurant.getLatitude()
-                    );
-                    restaurantsForUi.add(adapterModel);
-                }
-            } else if (noise == 2 && light == 1) {
-                if (noiseSumAvg > 75 && lightSumAvg > 80 && lightSumAvg < 500) {
-                    AdapterModel adapterModel = new AdapterModel(
-                            restaurant.getName(),
-                            lightSumAvg,
-                            noiseSumAvg,
-                            restaurant.getRating(),
-                            null,
-                            restaurant.getLongitude(),
-                            restaurant.getLatitude()
-                    );
-                    restaurantsForUi.add(adapterModel);
-                }
-            } else if (noise == 2 && light == 2) {
-                if (noiseSumAvg > 75 && lightSumAvg > 500) {
-                    AdapterModel adapterModel = new AdapterModel(
-                            restaurant.getName(),
-                            lightSumAvg,
-                            noiseSumAvg,
-                            restaurant.getRating(),
-                            null,
-                            restaurant.getLongitude(),
-                            restaurant.getLatitude()
-                    );
-                    restaurantsForUi.add(adapterModel);
+                else if (noise == 2 && light == 0) {
+                    if (noiseSumAvg > 75 && lightSumAvg < 80) {
+                        AdapterModel adapterModel = new AdapterModel(
+                                restaurant.getName(),
+                                lightSumAvg,
+                                noiseSumAvg,
+                                restaurant.getRating(),
+                                null,
+                                restaurant.getLongitude(),
+                                restaurant.getLatitude()
+                        );
+                        restaurantsForUi.add(adapterModel);
+                    }
+                } else if (noise == 2 && light == 1) {
+                    if (noiseSumAvg > 75 && lightSumAvg > 80 && lightSumAvg < 500) {
+                        AdapterModel adapterModel = new AdapterModel(
+                                restaurant.getName(),
+                                lightSumAvg,
+                                noiseSumAvg,
+                                restaurant.getRating(),
+                                null,
+                                restaurant.getLongitude(),
+                                restaurant.getLatitude()
+                        );
+                        restaurantsForUi.add(adapterModel);
+                    }
+                } else if (noise == 2 && light == 2) {
+                    if (noiseSumAvg > 75 && lightSumAvg > 500) {
+                        AdapterModel adapterModel = new AdapterModel(
+                                restaurant.getName(),
+                                lightSumAvg,
+                                noiseSumAvg,
+                                restaurant.getRating(),
+                                null,
+                                restaurant.getLongitude(),
+                                restaurant.getLatitude()
+                        );
+                        restaurantsForUi.add(adapterModel);
+                    }
                 }
             }
+
+
+            Log.d("Response_01-01", String.valueOf(nearbyRestaurantsList.size()));
+
+//            Todo - complete
 
 //            Log.i("dataaaaaaaaa", String.valueOf(restaurantsList.size()));
 //            Log.i("dataaaaaaaaa", restaurant.getName());

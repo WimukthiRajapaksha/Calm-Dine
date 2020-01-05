@@ -186,7 +186,9 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.My
             @Override
             public void onClick(View view) {
 //                PolylineOptions rectOptions = new PolylineOptions()
-                Uri uri = Uri.parse("geo:"+currentRestaurant.getLongitude()+","+currentRestaurant.getLatitude() + "?q=" + Uri.encode(currentRestaurant.getName()));
+                Uri uri = Uri.parse("geo:"+currentRestaurant.getLatitude()+","+currentRestaurant.getLongitude() + "?q=" + Uri.encode(currentRestaurant.getName()));
+//                Uri uri = Uri.parse("geo:"+currentRestaurant.getLatitude()+","+currentRestaurant.getLongitude());
+
 //                Uri uri = Uri.parse("google.navigation:q=" + Uri.encode(currentRestaurant.getName()));
                 Log.i("uri", String.valueOf(uri));
                 Uri gmmIntentUri = uri;

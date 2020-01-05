@@ -2,8 +2,6 @@ package com.example.calmdine.models;
 
 import android.widget.ImageView;
 
-import java.sql.Timestamp;
-
 public class AdapterModel {
     private String name;
     private double light;

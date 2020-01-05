@@ -187,7 +187,7 @@ public class BackendServices extends Activity {
                             Log.i("StringValue", "----------------------------\n\n");
                             Log.i("StringValue", placeId);
 
-                            String urlPhotoReferenceRating = "https://maps.googleapis.com/maps/api/place/details/json?place_id="+placeId+"&key="+ mContext.getResources().getString(R.string.google_maps_key);
+                            final String urlPhotoReferenceRating = "https://maps.googleapis.com/maps/api/place/details/json?place_id="+placeId+"&key="+ mContext.getResources().getString(R.string.google_maps_key);
                             Log.d("StringValue------", urlPhotoReferenceRating);
                             RequestQueue queuePhotoRating = Volley.newRequestQueue(mContext);
                             JsonObjectRequest getRequestPhoto = new JsonObjectRequest(Request.Method.GET, urlPhotoReferenceRating, null,
@@ -197,6 +197,7 @@ public class BackendServices extends Activity {
                                         public void onResponse(JSONObject response) {
                                             Log.d("StringValue------", response.toString());
                                             try {
+                                                Log.i("StringValueRating", urlPhotoReferenceRating);
                                                 String rating = ((JSONObject) response.getJSONObject("result")).getString("rating");
                                                 Log.i("StringValueRating", rating);
                                                 restaurantRef.child(place.getName()).child("rating").setValue(rating);

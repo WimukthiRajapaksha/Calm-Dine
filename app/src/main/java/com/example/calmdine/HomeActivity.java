@@ -449,6 +449,9 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         Intent intent = new Intent(mContext, RecommendationActivity.class);
         intent.putExtra("noise", spinnerNoise.getSelectedItemPosition());
         intent.putExtra("light", spinnerLight.getSelectedItemPosition());
+        intent.putExtra("locationDataLong", currentLongitude);
+        intent.putExtra("locationDataLat", currentLatitude);
+        Log.d("Response_01", String.valueOf(currentLongitude));
         startActivity(intent);
     }
 }

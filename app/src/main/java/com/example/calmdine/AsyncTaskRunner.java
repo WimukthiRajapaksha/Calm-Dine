@@ -208,9 +208,9 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
             } finally {
                     while (true) {
 //                        ---TODO - add below and remove the next 2 line
-//                        SensorModel sensorModel = new SensorModel(place.getName(), avgLight, soundDb());
-                        Random rand = new Random();
-                        SensorModel sensorModel = new SensorModel(place.getName(), rand.nextInt(1000), soundDb());
+                        SensorModel sensorModel = new SensorModel(place.getName(), avgLight, soundDb());
+//                        Random rand = new Random();
+//                        SensorModel sensorModel = new SensorModel(place.getName(), rand.nextInt(1000), soundDb());
                         backendServices.addSensorData(sensorModel, place);
                         break;
                     }
