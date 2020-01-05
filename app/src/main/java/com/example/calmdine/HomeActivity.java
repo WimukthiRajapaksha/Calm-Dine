@@ -451,6 +451,4 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         intent.putExtra("light", spinnerLight.getSelectedItemPosition());
         startActivity(intent);
     }
-
-
 }

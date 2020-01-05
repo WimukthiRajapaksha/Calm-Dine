@@ -55,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     EditText password;
     TextView loginOrSignUpSection;
     Button btnLoginSignup;
+    TextView txtSignUpLogin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
         password = findViewById(R.id.txtPassword);
         loginOrSignUpSection = findViewById(R.id.txtLoginOrSignUpSection);
         btnLoginSignup = findViewById(R.id.btnLoginSignup);
+        txtSignUpLogin = findViewById(R.id.txtSignUpLogin);
         setupUI(findViewById(R.id.mainActivityLinearLayout));
 
         mDatabase = FirebaseDatabase.getInstance();
@@ -151,9 +153,11 @@ public class MainActivity extends AppCompatActivity {
         if(!loginBool) {
             loginOrSignUpSection.setText("Sign Up");
             btnLoginSignup.setText("Login");
+            txtSignUpLogin.setText("Don't have an account?");
         } else {
             loginOrSignUpSection.setText("Login");
             btnLoginSignup.setText("Sign Up");
+            txtSignUpLogin.setText("Have an account?");
         }
         loginBool = !loginBool;
     }
@@ -178,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static void hideSoftKeyboard(Activity activity) {
         InputMethodManager inputMethodManager = (InputMethodManager) activity.getSystemService( Activity.INPUT_METHOD_SERVICE);
-        if (activity.getCurrentFocus().getWindowToken() != null) {
+        if (activity.getCurrentFocus().getWindowToken() != null && activity.getCurrentFocus() != null && activity != null) {
             inputMethodManager.hideSoftInputFromWindow(activity.getCurrentFocus().getWindowToken(), 0);
         }
     }

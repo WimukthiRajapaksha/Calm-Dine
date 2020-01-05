@@ -13,34 +13,24 @@
 
     <string name="map_description">Restaurants Around You</string>
 
-    <string name="description_noise">Maximum Noise Intensity (dB)</string>
-    <string name="description_light">Maximum Light Intensity (lux)</string>
+    <string name="description_noise">Desired Noise Intensity Level</string>
+    <string name="description_light">Desired Light Intensity Level</string>
 
-    <string name="description_noise_recom">Max Noise Intensity (dB)</string>
-    <string name="description_light_recom">Max Light Intensity (lux)</string>
+    <string name="description_noise_recom">Noise Intensity</string>
+    <string name="description_light_recom">Light Intensity</string>
 
     <string name="recommendation_header">Recommended Restaurants</string>
 
     <string-array name="noise_levels">
-        <item>5</item>
-        <item>10</item>
-        <item>15</item>
-        <item>20</item>
-        <item>25</item>
-        <item>30</item>
-        <item>35</item>
-        <item>any</item>
+        <item>Low</item>
+        <item>Medium</item>
+        <item>High</item>
     </string-array>
 
     <string-array name="light_levels">
-        <item>10</item>
-        <item>20</item>
-        <item>30</item>
-        <item>40</item>
-        <item>50</item>
-        <item>60</item>
-        <item>70</item>
-        <item>any</item>
+        <item>Low</item>
+        <item>Medium</item>
+        <item>High</item>
     </string-array>
 
     <string name="recommend">Recommend</string>

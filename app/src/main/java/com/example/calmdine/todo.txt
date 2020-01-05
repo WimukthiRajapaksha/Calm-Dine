@@ -1,4 +1,2 @@
-noise in background
-light in background - done for now
 background update location - partially completed
 push notification to update sensor data

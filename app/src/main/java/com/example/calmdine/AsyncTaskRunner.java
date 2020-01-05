@@ -68,6 +68,7 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static java.lang.Math.exp;
 
@@ -163,7 +164,7 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
 
     public double getAmplitude() {
         if (mRecorder != null)
-            return  (mRecorder.getMaxAmplitude());
+            return  (mRecorder.getMaxAmplitude()/2700.0);
         else
             return 0;
     }
@@ -172,6 +173,7 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
         double amp =  getAmplitude();
         mEMA = EMA_FILTER * amp + (1.0 - EMA_FILTER) * mEMA;
         return  20 * Math.log10(mEMA / (10 * exp(-7)) );
+//        return  20 * Math.log10(mEMA / 32767.0 );
     }
 
 //    -------------------------------------------------
@@ -205,7 +207,10 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
                 e.printStackTrace();
             } finally {
                     while (true) {
-                        SensorModel sensorModel = new SensorModel(place.getName(), avgLight, soundDb());
+//                        ---TODO - add below and remove the next 2 line
+//                        SensorModel sensorModel = new SensorModel(place.getName(), avgLight, soundDb());
+                        Random rand = new Random();
+                        SensorModel sensorModel = new SensorModel(place.getName(), rand.nextInt(1000), soundDb());
                         backendServices.addSensorData(sensorModel, place);
                         break;
                     }
@@ -230,11 +235,6 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
             Log.i("light------++++--------", String.valueOf(avgLight));
             Log.i("list", String.valueOf(restaurantsList.size()));
 
-//            TODO - noise sensor value calculator
-//            for (Double noiseValSum : noiseSensorValues) {
-//                sum += lightValSum;
-//            }
-//            double avgLight = sum/lightSensorValues.size();
             intervalTime = 10;
             lightSensorValues.clear();
         }

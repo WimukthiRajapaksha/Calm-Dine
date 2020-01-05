@@ -1,5 +1,6 @@
 package com.example.calmdine;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -96,18 +97,20 @@ public class RecommendationActivity extends AppCompatActivity {
             public void onItemSelected(AdapterView<?> arg0, View arg1, int position, long arg3) {
 //                Log.i("last", String.valueOf(spinnerNoise.getCount()));
 //                Log.i("last", String.valueOf(position));
-                double noiseSpinVal;
-                double lightSpinVal;
-                if(spinnerNoise.getSelectedItemPosition()+1 != spinnerNoise.getCount()) {
-                    noiseSpinVal = Double.parseDouble(spinnerNoise.getSelectedItem().toString());
-                } else {
-                    noiseSpinVal = Double.valueOf(1000000000);
-                }
-                if(spinnerLight.getSelectedItemPosition()+1 != spinnerLight.getCount()) {
-                    lightSpinVal = Double.parseDouble(spinnerLight.getSelectedItem().toString());
-                } else {
-                    lightSpinVal = Double.valueOf(1000000000);
-                }
+                int noiseSpinVal;
+                int lightSpinVal;
+//                if(spinnerNoise.getSelectedItemPosition()+1 != spinnerNoise.getCount()) {
+//                    noiseSpinVal = spinnerNoise.getSelectedItemPosition()+1;
+//                } else {
+//                    noiseSpinVal = Double.valueOf(1000000000);
+//                }
+//                if(spinnerLight.getSelectedItemPosition()+1 != spinnerLight.getCount()) {
+//                    lightSpinVal = spinnerLight.getSelectedItemPosition()+1;
+//                } else {
+//                    lightSpinVal = Double.valueOf(1000000000);
+//                }
+                lightSpinVal = spinnerLight.getSelectedItemPosition();
+                noiseSpinVal = spinnerNoise.getSelectedItemPosition();
                 onFilterChanged(noiseSpinVal, lightSpinVal);
 //                Toast.makeText(getBaseContext(), "You select " + spinnerLight.getSelectedItem(), Toast.LENGTH_LONG).show();
             }
@@ -122,18 +125,20 @@ public class RecommendationActivity extends AppCompatActivity {
             public void onItemSelected(AdapterView<?> arg0, View arg1, int position, long arg3) {
 //                Log.i("last", String.valueOf(spinnerNoise.getSelectedItemPosition()));
 //                Log.i("last", String.valueOf(spinnerNoise.getCount()));
-                double noiseSpinVal;
-                double lightSpinVal;
-                if(spinnerNoise.getSelectedItemPosition()+1 != spinnerNoise.getCount()) {
-                    noiseSpinVal = Double.parseDouble(spinnerNoise.getSelectedItem().toString());
-                } else {
-                    noiseSpinVal = Double.valueOf(1000000000);
-                }
-                if(spinnerLight.getSelectedItemPosition()+1 != spinnerLight.getCount()) {
-                    lightSpinVal = Double.parseDouble(spinnerLight.getSelectedItem().toString());
-                } else {
-                    lightSpinVal = Double.valueOf(1000000000);
-                }
+                int noiseSpinVal;
+                int lightSpinVal;
+//                if(spinnerNoise.getSelectedItemPosition()+1 != spinnerNoise.getCount()) {
+//                    noiseSpinVal = Double.parseDouble(spinnerNoise.getSelectedItem().toString());
+//                } else {
+//                    noiseSpinVal = Double.valueOf(1000000000);
+//                }
+//                if(spinnerLight.getSelectedItemPosition()+1 != spinnerLight.getCount()) {
+//                    lightSpinVal = Double.parseDouble(spinnerLight.getSelectedItem().toString());
+//                } else {
+//                    lightSpinVal = Double.valueOf(1000000000);
+//                }
+                lightSpinVal = spinnerLight.getSelectedItemPosition();
+                noiseSpinVal = spinnerNoise.getSelectedItemPosition();
                 onFilterChanged(noiseSpinVal, lightSpinVal);
 //                Toast.makeText(getBaseContext(), "You select " + spinnerLight.getSelectedItem(), Toast.LENGTH_LONG).show();
             }
@@ -318,7 +323,7 @@ public class RecommendationActivity extends AppCompatActivity {
 //        Toast.makeText(parent.getContext(), "OnItemSelectedListener : " + parent.getItemAtPosition(pos).toString(), Toast.LENGTH_SHORT).show();
     }
 
-    public void onFilterChanged(double noise, double light) {
+    public void onFilterChanged(int noise, int light) {
         restaurantsForUi.clear();
         Log.i("Size--", noise + " " + light);
         Log.i("Size--", String.valueOf(restaurantWithTimestampList.size()));
@@ -335,17 +340,146 @@ public class RecommendationActivity extends AppCompatActivity {
                 noiseSum += noiseVal.getNoise();
             }
             Log.i("size-----", String.valueOf(noiseSum));
-            if (noise>=noiseSum && light >= lightSum) {
-                AdapterModel adapterModel = new AdapterModel(
-                        restaurant.getName(),
-                        lightSum/restaurant.getLightList().size(),
-                        noiseSum/restaurant.getNoiseList().size(),
-                        restaurant.getRating(),
-                        null,
-                        restaurant.getLongitude(),
-                        restaurant.getLatitude()
-                );
-                restaurantsForUi.add(adapterModel);
+
+
+
+//            if (noise>=noiseSum && light >= lightSum) {
+//                AdapterModel adapterModel = new AdapterModel(
+//                        restaurant.getName(),
+//                        lightSum/restaurant.getLightList().size(),
+//                        noiseSum/restaurant.getNoiseList().size(),
+//                        restaurant.getRating(),
+//                        null,
+//                        restaurant.getLongitude(),
+//                        restaurant.getLatitude()
+//                );
+//                restaurantsForUi.add(adapterModel);
+//            }
+
+            float lightSumAvg = lightSum/restaurant.getLightList().size();
+            float noiseSumAvg = noiseSum/restaurant.getNoiseList().size();
+//-----------------------
+            if (noise == 0 && light == 0) {
+                if (noiseSumAvg < 33 && lightSumAvg < 80) {
+                    AdapterModel adapterModel = new AdapterModel(
+                            restaurant.getName(),
+                            lightSumAvg,
+                            noiseSumAvg,
+                            restaurant.getRating(),
+                            null,
+                            restaurant.getLongitude(),
+                            restaurant.getLatitude()
+                    );
+                    restaurantsForUi.add(adapterModel);
+                }
+            } else if (noise == 0 && light == 1) {
+                if (noiseSumAvg < 33 && lightSumAvg > 80 && lightSumAvg < 500) {
+                    AdapterModel adapterModel = new AdapterModel(
+                            restaurant.getName(),
+                            lightSumAvg,
+                            noiseSumAvg,
+                            restaurant.getRating(),
+                            null,
+                            restaurant.getLongitude(),
+                            restaurant.getLatitude()
+                    );
+                    restaurantsForUi.add(adapterModel);
+                }
+            } else if (noise == 0 && light == 2) {
+                if (noiseSumAvg < 33 && lightSumAvg > 500) {
+                    AdapterModel adapterModel = new AdapterModel(
+                            restaurant.getName(),
+                            lightSumAvg,
+                            noiseSumAvg,
+                            restaurant.getRating(),
+                            null,
+                            restaurant.getLongitude(),
+                            restaurant.getLatitude()
+                    );
+                    restaurantsForUi.add(adapterModel);
+                }
+            }
+//            --------------------------
+            else if (noise == 1 && light == 0) {
+                if (noiseSumAvg > 30 && noiseSumAvg < 75 && lightSumAvg < 80 ) {
+                    AdapterModel adapterModel = new AdapterModel(
+                            restaurant.getName(),
+                            lightSumAvg,
+                            noiseSumAvg,
+                            restaurant.getRating(),
+                            null,
+                            restaurant.getLongitude(),
+                            restaurant.getLatitude()
+                    );
+                    restaurantsForUi.add(adapterModel);
+                }
+            } else if (noise == 1 && light == 1) {
+                if (noiseSumAvg > 30 && noiseSumAvg < 75 && lightSumAvg > 80 && lightSumAvg < 500 ) {
+                    AdapterModel adapterModel = new AdapterModel(
+                            restaurant.getName(),
+                            lightSumAvg,
+                            noiseSumAvg,
+                            restaurant.getRating(),
+                            null,
+                            restaurant.getLongitude(),
+                            restaurant.getLatitude()
+                    );
+                    restaurantsForUi.add(adapterModel);
+                }
+            } else if (noise == 1 && light == 2) {
+                if (noiseSumAvg > 30 && noiseSumAvg < 75 && lightSumAvg > 500) {
+                    AdapterModel adapterModel = new AdapterModel(
+                            restaurant.getName(),
+                            lightSumAvg,
+                            noiseSumAvg,
+                            restaurant.getRating(),
+                            null,
+                            restaurant.getLongitude(),
+                            restaurant.getLatitude()
+                    );
+                    restaurantsForUi.add(adapterModel);
+                }
+            }
+//            ---------------------------
+            else if (noise == 2 && light == 0) {
+                if (noiseSumAvg > 75 && lightSumAvg < 80) {
+                    AdapterModel adapterModel = new AdapterModel(
+                            restaurant.getName(),
+                            lightSumAvg,
+                            noiseSumAvg,
+                            restaurant.getRating(),
+                            null,
+                            restaurant.getLongitude(),
+                            restaurant.getLatitude()
+                    );
+                    restaurantsForUi.add(adapterModel);
+                }
+            } else if (noise == 2 && light == 1) {
+                if (noiseSumAvg > 75 && lightSumAvg > 80 && lightSumAvg < 500) {
+                    AdapterModel adapterModel = new AdapterModel(
+                            restaurant.getName(),
+                            lightSumAvg,
+                            noiseSumAvg,
+                            restaurant.getRating(),
+                            null,
+                            restaurant.getLongitude(),
+                            restaurant.getLatitude()
+                    );
+                    restaurantsForUi.add(adapterModel);
+                }
+            } else if (noise == 2 && light == 2) {
+                if (noiseSumAvg > 75 && lightSumAvg > 500) {
+                    AdapterModel adapterModel = new AdapterModel(
+                            restaurant.getName(),
+                            lightSumAvg,
+                            noiseSumAvg,
+                            restaurant.getRating(),
+                            null,
+                            restaurant.getLongitude(),
+                            restaurant.getLatitude()
+                    );
+                    restaurantsForUi.add(adapterModel);
+                }
             }
 
 //            Log.i("dataaaaaaaaa", String.valueOf(restaurantsList.size()));
@@ -363,5 +497,13 @@ public class RecommendationActivity extends AppCompatActivity {
         }
         updateRecyclerView(restaurantsForUi);
 //        Log.i(restaurantsForUi);
+    }
+
+    @Override
+    public void onBackPressed() {
+        Intent setIntent = new Intent(this, HomeActivity.class);
+        Log.i("Intent---", "Here");
+        startActivity(setIntent);
+        finish();
     }
 }
