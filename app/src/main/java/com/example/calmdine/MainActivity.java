@@ -6,29 +6,16 @@ import android.os.Bundle;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Logger;
-import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.constraintlayout.widget.ConstraintLayout;
 
 import android.util.Log;
 import android.view.MotionEvent;
@@ -96,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
     public void onLogin(View view) {
         loginProgress.setVisibility(View.VISIBLE);
         mAuth.signOut();
-        Log.i("Value", String.valueOf(loginBool));
+//        Log.i("Value", String.valueOf(loginBool));
         if (loginBool) {
             mAuth.signInWithEmailAndPassword(username.getText().toString(), password.getText().toString()).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                 @Override
@@ -105,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         Intent intent = new Intent(MainActivity.this, HomeActivity.class);
                         startActivity(intent);
-                        Log.i("Ok", "Login Done");
+//                        Log.i("Ok", "Login Done");
                     } else {
                         try {
                             throw task.getException();
@@ -125,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onComplete(@NonNull Task<AuthResult> task) {
                 loginProgress.setVisibility(View.INVISIBLE);
                 if (task.isSuccessful()) {
-                    Log.i("Ok", "Create User done");
+//                    Log.i("Ok", "Create User done");
                     onSignUpLogin(getWindow().getDecorView());
                     Toast.makeText(MainActivity.this, "User Added.", Toast.LENGTH_LONG).show();
                 } else {

@@ -1,6 +1,5 @@
 package com.example.calmdine.models;
 
-import java.sql.Time;
 import java.sql.Timestamp;
 
 public class SensorModel {

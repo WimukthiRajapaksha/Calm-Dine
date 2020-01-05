@@ -114,8 +114,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_home);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        MapFragment mapFragment = (MapFragment) getFragmentManager()
-                .findFragmentById(R.id.mapView);
+        MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.mapView);
         mapFragment.getMapAsync(this);
 
         btnRecommendation = findViewById(R.id.btnRecommendation);
@@ -204,7 +203,6 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
             mCoarseLocationPermissionGranted = true;
             mFineLocationPermissionGranted = true;
             getDeviceLocation();
-//            startBackgroundProcess();
         }
     }
 
@@ -226,7 +224,6 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
             mFineLocationPermissionGranted = true;
 
             getDeviceLocation();
-//            startBackgroundProcess();
         } else {
             checkPermission();
         }
@@ -259,12 +256,10 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
             currentLongitude = deviceLocation.getLongitude();
 
             mMap.clear();
-            BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.drawable.navigation);
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(currentLatitude, currentLongitude), 15.0f));
             MarkerOptions markerOptions = new MarkerOptions();
             markerOptions.position(new LatLng(currentLatitude, currentLongitude));
             markerOptions.title("You");
-//            markerOptions.icon(icon);
             mMap.addMarker(markerOptions);
 
             getNearbyRestaurants();
@@ -274,7 +269,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void getNearbyRestaurants() {
-        Log.d(TAG, "getNearbyRestaurants: getting nearby restaurants");
+//        Log.d(TAG, "getNearbyRestaurants: getting nearby restaurants");
         StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
         stringBuilder.append("location=" + currentLatitude + "," + currentLongitude);
         stringBuilder.append("&radius=1000");
@@ -312,8 +307,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onRetrievingTaskCompleted(Place place) {
         nearestPlace = place;
-        Log.d(TAG, "onRetrievingTaskCompleted: Nearest Restaurant Name: " + nearestPlace.getName());
-
+//        Log.d(TAG, "onRetrievingTaskCompleted: Nearest Restaurant Name: " + nearestPlace.getName());
 
         DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
             @Override
@@ -326,7 +320,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 
                     case DialogInterface.BUTTON_NEGATIVE:
                         //No button clicked
-                        Log.i("Clicked----", "here");
+//                        Log.i("Clicked----", "here");
                         break;
                 }
             }
@@ -360,22 +354,21 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onCheckingTaskCompleted(boolean isNearRestaurant) {
         this.isNearRestaurant = isNearRestaurant;
-        Log.d(TAG, "onCheckingTaskCompleted: Is Device near a Restaurant: " + this.isNearRestaurant);
+//        Log.d(TAG, "onCheckingTaskCompleted: Is Device near a Restaurant: " + this.isNearRestaurant);
 
         //To get the nearest restaurant if the there's a restaurant in device area
         if(isNearRestaurant) {
             getNearestRestaurant();
-
         } else {
-            Log.d(TAG, "onCheckingTaskCompleted: Device is not in a Restaurant");
+//            Log.d(TAG, "onCheckingTaskCompleted: Device is not in a Restaurant");
         }
     }
 
     private void getDeviceLocation() {
         if(mGoogleApiClient != null) {
-            Log.i("Here", "1");
-            Log.i("Here", mGoogleApiClient.toString());
-            Log.i("Here", String.valueOf(mGoogleApiClient.isConnected()));
+//            Log.i("Here", "1");
+//            Log.i("Here", mGoogleApiClient.toString());
+//            Log.i("Here", String.valueOf(mGoogleApiClient.isConnected()));
             if (mGoogleApiClient.isConnected()) {
                 int permissionLocation = ContextCompat.checkSelfPermission(HomeActivity.this, Manifest.permission.ACCESS_FINE_LOCATION);
                 if (permissionLocation == PackageManager.PERMISSION_GRANTED) {
@@ -451,7 +444,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         intent.putExtra("light", spinnerLight.getSelectedItemPosition());
         intent.putExtra("locationDataLong", currentLongitude);
         intent.putExtra("locationDataLat", currentLatitude);
-        Log.d("Response_01", String.valueOf(currentLongitude));
+//        Log.d("Response_01", String.valueOf(currentLongitude));
         startActivity(intent);
     }
 }

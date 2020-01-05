@@ -1,2 +1,0 @@
-background update location - partially completed
-push notification to update sensor data

@@ -1,11 +1,9 @@
 package com.example.calmdine;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,8 +11,6 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
-import android.widget.Toast;
-
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -38,9 +34,7 @@ import org.json.JSONObject;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class RecommendationActivity extends AppCompatActivity {
 
@@ -119,9 +113,8 @@ public class RecommendationActivity extends AppCompatActivity {
                 {
                     @Override
                     public void onResponse(JSONObject response) {
-                        // display response
-                        Log.d("Response_01", urlRestaurants);
-                        Log.d("Response_01", response.toString());
+//                        Log.d("Response_01", urlRestaurants);
+//                        Log.d("Response_01", response.toString());
 
                         try {
                             JSONArray resultsArray = ((JSONArray) response.getJSONArray("results"));
@@ -131,7 +124,7 @@ public class RecommendationActivity extends AppCompatActivity {
                                 nearbyRestaurantsList.add(name);
 //                                Log.d("Response_01-", String.valueOf(nearbyRestaurantsList.size()));
                             }
-                            Log.d("Response_01-03", String.valueOf(nearbyRestaurantsList.size()));
+//                            Log.d("Response_01-03", String.valueOf(nearbyRestaurantsList.size()));
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -141,37 +134,23 @@ public class RecommendationActivity extends AppCompatActivity {
                 {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.d("Error.Response", String.valueOf(error));
+//                        Log.d("Error.Response", String.valueOf(error));
                     }
                 }
         );
 
-        Log.d("Response_01-02", String.valueOf(nearbyRestaurantsList.size()));
+//        Log.d("Response_01-02", String.valueOf(nearbyRestaurantsList.size()));
 
-// add it to the RequestQueue
         queueRestaurants.add(getRequest);
 
         spinnerLight.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> arg0, View arg1, int position, long arg3) {
-//                Log.i("last", String.valueOf(spinnerNoise.getCount()));
-//                Log.i("last", String.valueOf(position));
                 int noiseSpinVal;
                 int lightSpinVal;
-//                if(spinnerNoise.getSelectedItemPosition()+1 != spinnerNoise.getCount()) {
-//                    noiseSpinVal = spinnerNoise.getSelectedItemPosition()+1;
-//                } else {
-//                    noiseSpinVal = Double.valueOf(1000000000);
-//                }
-//                if(spinnerLight.getSelectedItemPosition()+1 != spinnerLight.getCount()) {
-//                    lightSpinVal = spinnerLight.getSelectedItemPosition()+1;
-//                } else {
-//                    lightSpinVal = Double.valueOf(1000000000);
-//                }
                 lightSpinVal = spinnerLight.getSelectedItemPosition();
                 noiseSpinVal = spinnerNoise.getSelectedItemPosition();
                 onFilterChanged(noiseSpinVal, lightSpinVal);
-//                Toast.makeText(getBaseContext(), "You select " + spinnerLight.getSelectedItem(), Toast.LENGTH_LONG).show();
             }
 
             @Override
@@ -182,24 +161,11 @@ public class RecommendationActivity extends AppCompatActivity {
         spinnerNoise.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> arg0, View arg1, int position, long arg3) {
-//                Log.i("last", String.valueOf(spinnerNoise.getSelectedItemPosition()));
-//                Log.i("last", String.valueOf(spinnerNoise.getCount()));
                 int noiseSpinVal;
                 int lightSpinVal;
-//                if(spinnerNoise.getSelectedItemPosition()+1 != spinnerNoise.getCount()) {
-//                    noiseSpinVal = Double.parseDouble(spinnerNoise.getSelectedItem().toString());
-//                } else {
-//                    noiseSpinVal = Double.valueOf(1000000000);
-//                }
-//                if(spinnerLight.getSelectedItemPosition()+1 != spinnerLight.getCount()) {
-//                    lightSpinVal = Double.parseDouble(spinnerLight.getSelectedItem().toString());
-//                } else {
-//                    lightSpinVal = Double.valueOf(1000000000);
-//                }
                 lightSpinVal = spinnerLight.getSelectedItemPosition();
                 noiseSpinVal = spinnerNoise.getSelectedItemPosition();
                 onFilterChanged(noiseSpinVal, lightSpinVal);
-//                Toast.makeText(getBaseContext(), "You select " + spinnerLight.getSelectedItem(), Toast.LENGTH_LONG).show();
             }
 
             @Override
@@ -207,11 +173,6 @@ public class RecommendationActivity extends AppCompatActivity {
             }
 
         });
-
-//        addRestaurant("Wimu", 4.5, 3.1, 9.4);
-//        addRestaurant("wimukthi", 5.0, 7.3, 8.8);
-//        addRestaurant("rajapaksha", 5.4, 8.5, 7.3);
-//        addRestaurant("raj", 8.5, 1.3, 4.9);
     }
 
     public void loadRestaurantData() {
@@ -225,12 +186,12 @@ public class RecommendationActivity extends AppCompatActivity {
                 List<String> arrNames = new ArrayList<>();
                 SensorModel sensorModel;
 
-                Log.i("time--11", "0");
+//                Log.i("time--11", "0");
                 for (DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
                     List<SensorModel> sensorModelsForLight = new ArrayList<>();
                     List<SensorModel> sensorModelsForNoise = new ArrayList<>();
 
-                    Log.i("time--00", "0");
+//                    Log.i("time--00", "0");
 //                    Log.i("Object--", String.valueOf(postSnapshot.child("light")));
                     try {
                         String nameSensor = postSnapshot.child("name").getValue().toString();
@@ -238,10 +199,8 @@ public class RecommendationActivity extends AppCompatActivity {
                         arrNoiseWithTimeStamp = postSnapshot.child("noise").getChildren();
                         arrNames.add(postSnapshot.child("name").getValue().toString());
 
-
-
                         while (arrLightWithTimeStamp.iterator().hasNext()) {
-                            Log.i("time--==", "0");
+//                            Log.i("time--==", "0");
                             DataSnapshot snapshotLight = arrLightWithTimeStamp.iterator().next();
                             if (!(snapshotLight.child("light").getValue().equals("0.0"))) {
                                 SensorModel lightTemp = new SensorModel(
@@ -254,10 +213,10 @@ public class RecommendationActivity extends AppCompatActivity {
                             }
                         }
                         while (arrNoiseWithTimeStamp.iterator().hasNext()) {
-                            Log.i("time----", "0");
+//                            Log.i("time----", "0");
                             DataSnapshot snapshotNoise = arrNoiseWithTimeStamp.iterator().next();
                             if ((!(snapshotNoise.child("noise").getValue().equals("-Infinity"))) && (!(snapshotNoise.child("noise").getValue().equals("0.0")))) {
-                                Log.i("timestamp--", "Here");
+//                                Log.i("timestamp--", "Here");
                                 SensorModel noiseTemp = new SensorModel(
                                         nameSensor,
                                         Double.valueOf(0),
@@ -266,16 +225,8 @@ public class RecommendationActivity extends AppCompatActivity {
                                 );
                                 sensorModelsForNoise.add(noiseTemp);
                             }
-                            Log.i("timestamp--", String.valueOf((snapshotNoise.child("noise").getValue())));
+//                            Log.i("timestamp--", String.valueOf((snapshotNoise.child("noise").getValue())));
                         }
-//                    while (restaurantWithTimestampList.iterator().hasNext()) {
-//                        RestaurantWithTimestamp currentRestTimestamp = restaurantWithTimestampList.iterator().next();
-////                        Log.i("time", String.valueOf(currentRestTimestamp.getLight()));
-//                        for (SensorModel senModel: currentRestTimestamp.getLight()) {
-//                            Log.i("time----", String.valueOf(senModel.getTimestamp()));
-//                        }
-//
-//                    }
                         RestaurantWithTimestamp restTime = new RestaurantWithTimestamp(
                                 postSnapshot.getKey(),
                                 sensorModelsForNoise,
@@ -284,86 +235,29 @@ public class RecommendationActivity extends AppCompatActivity {
                                 Float.parseFloat(postSnapshot.child("longitude").getValue().toString()),
                                 Float.parseFloat(postSnapshot.child("latitude").getValue().toString())
                         );
-                        Log.i("time---------", String.valueOf(restTime.getRating()));
+//                        Log.i("time---------", String.valueOf(restTime.getRating()));
                         restaurantWithTimestampList.add(restTime);
-                        Log.i("time--++", "1");
+//                        Log.i("time--++", "1");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
 
                 }
                 listCompleted = true;
-                Log.i("time--++--", "1");
-                Log.i("time--++--", String.valueOf(restaurantWithTimestampList.size()));
-//                restaurantsForUi = restaurantWithTimestampList;
+//                Log.i("time--++--", "1");
+//                Log.i("time--++--", String.valueOf(restaurantWithTimestampList.size()));
                 initializedUiList = true;
             }
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-                Log.i("time--1---1", "0");
+//                Log.i("time--1---1", "0");
             }
         });
-//        DatabaseReference restaurantRef = firebaseDatabase.getReference().child("restaurants");
-//
-//        -----------------------------
-//        restaurantRef.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                for (DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
-//                    Restaurant rest = new Restaurant(
-//                            postSnapshot.getKey(),
-//                            Double.parseDouble(postSnapshot.child("noise").getValue().toString()),
-//                            Double.parseDouble(postSnapshot.child("light").getValue().toString()),
-//                            Double.parseDouble(postSnapshot.child("rating").getValue().toString()),
-//                            Float.parseFloat(postSnapshot.child("longitude").getValue().toString()),
-//                            Float.parseFloat(postSnapshot.child("latitude").getValue().toString())
-//                    );
-//                    restaurantsList.add(rest);
-//                }
-//                Log.i("Size++", String.valueOf(restaurantsList.size()));
-//                updateRecyclerView();
-////                Log.i("Size", String.valueOf(restaurantsList.size()));
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//                System.out.println("The read failed: " + databaseError.getCode());
-//            }
-//        });
-//
-//        TODO - done
-//        backendServices.getAllRestaurantDetailsForRecommendation();
-//        Log.i("returnList--", String.valueOf(returnList.size()));
-//        for (RestaurantWithTimestamp restaurantWithTimestamp: returnList) {
-//            Log.i("returnList--", restaurantWithTimestamp.getName());
-//        }
-//        ----------------------------------
 
     }
 
-//    public void updateRecyclerView() {
-////        while (true) {
-//        Log.i("time--000", String.valueOf(restaurantWithTimestampList.size()));
-//        if (initializedUiList) {
-//            RecommendationActivity.this.runOnUiThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    Log.i("Size", String.valueOf(restaurantsForUi.size()));
-//                    restaurantAdapter = new RestaurantAdapter(restaurantsForUi);
-//                    recyclerView.setAdapter(restaurantAdapter);
-//                    RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(RecommendationActivity.this);
-//                    recyclerView.setLayoutManager(layoutManager);
-//                    recyclerView.setHasFixedSize(true);
-//                }
-//            });
-////                break;
-//        }
-////        }
-//
-//    }
-
     public void updateRecyclerView(final List<AdapterModel> adapterModels) {
-        Log.i("time--000", String.valueOf(adapterModels.size()));
+//        Log.i("time--000", String.valueOf(adapterModels.size()));
         if (initializedUiList) {
             RecommendationActivity.this.runOnUiThread(new Runnable() {
                 @Override
@@ -380,56 +274,27 @@ public class RecommendationActivity extends AppCompatActivity {
     }
 
     public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-//        Toast.makeText(parent.getContext(), "OnItemSelectedListener : " + parent.getItemAtPosition(pos).toString(), Toast.LENGTH_SHORT).show();
     }
 
     public void onFilterChanged(int noise, int light) {
         restaurantsForUi.clear();
-        Log.i("Size--", noise + " " + light);
-        Log.i("Size--", String.valueOf(restaurantWithTimestampList.size()));
-
-
-
-
-
-        Log.d("Response_01-05", String.valueOf(nearbyRestaurantsList.size()));
-
-
-
-
-
+//        Log.i("Size--", noise + " " + light);
+//        Log.i("Size--", String.valueOf(restaurantWithTimestampList.size()));
+//        Log.d("Response_01-05", String.valueOf(nearbyRestaurantsList.size()));
         for (RestaurantWithTimestamp restaurant: restaurantWithTimestampList) {
-
-
             if (nearbyRestaurantsList.indexOf(restaurant.getName()) != -1) {
-                Log.i("size-----", restaurant.getName());
-                Log.i("size-----", String.valueOf(restaurant.getRating()));
+//                Log.i("size-----", restaurant.getName());
+//                Log.i("size-----", String.valueOf(restaurant.getRating()));
                 float lightSum = 0f;
                 for (SensorModel lightVal: restaurant.getLightList()) {
                     lightSum += lightVal.getLight();
                 }
-                Log.i("size-----", String.valueOf(lightSum));
+//                Log.i("size-----", String.valueOf(lightSum));
                 float noiseSum = 0f;
                 for (SensorModel noiseVal: restaurant.getNoiseList()) {
                     noiseSum += noiseVal.getNoise();
                 }
-                Log.i("size-----", String.valueOf(noiseSum));
-
-
-
-//            if (noise>=noiseSum && light >= lightSum) {
-//                AdapterModel adapterModel = new AdapterModel(
-//                        restaurant.getName(),
-//                        lightSum/restaurant.getLightList().size(),
-//                        noiseSum/restaurant.getNoiseList().size(),
-//                        restaurant.getRating(),
-//                        null,
-//                        restaurant.getLongitude(),
-//                        restaurant.getLatitude()
-//                );
-//                restaurantsForUi.add(adapterModel);
-//            }
-
+//                Log.i("size-----", String.valueOf(noiseSum));
                 float lightSumAvg = lightSum/restaurant.getLightList().size();
                 float noiseSumAvg = noiseSum/restaurant.getNoiseList().size();
 //-----------------------
@@ -556,24 +421,7 @@ public class RecommendationActivity extends AppCompatActivity {
                     }
                 }
             }
-
-
-            Log.d("Response_01-01", String.valueOf(nearbyRestaurantsList.size()));
-
-//            Todo - complete
-
-//            Log.i("dataaaaaaaaa", String.valueOf(restaurantsList.size()));
-//            Log.i("dataaaaaaaaa", restaurant.getName());
-//            Log.i("dataaaaaaaaa-----", String.valueOf(restaurant.getLight()));
-
-//            ------------------------------
-//
-//            if(restaurant.getNoise() <= noise && restaurant.getLight() <= light) {
-//                restaurantsForUi.add(restaurant);
-////                Log.i("dataaaaaaaaa", restaurant.getName());
-//            }
-//
-//            ------------------------------
+//            Log.d("Response_01-01", String.valueOf(nearbyRestaurantsList.size()));
         }
         updateRecyclerView(restaurantsForUi);
 //        Log.i(restaurantsForUi);
@@ -582,7 +430,7 @@ public class RecommendationActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         Intent setIntent = new Intent(this, HomeActivity.class);
-        Log.i("Intent---", "Here");
+//        Log.i("Intent---", "Here");
         startActivity(setIntent);
         finish();
     }

@@ -3,7 +3,6 @@ package com.example.calmdine.ServicesFire;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.net.Uri;
 import android.util.Log;
 import android.widget.ImageView;
 
@@ -15,7 +14,6 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.calmdine.R;
 import com.example.calmdine.models.Place;
@@ -32,7 +30,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.json.JSONArray;
@@ -40,8 +37,6 @@ import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -83,7 +78,7 @@ public class BackendServices extends Activity {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 for (DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
                     try {
-                        Log.i("Object", String.valueOf(postSnapshot.child("light")));
+//                        Log.i("Object", String.valueOf(postSnapshot.child("light")));
                         String nameSensor = postSnapshot.child("name").getValue().toString();
                         Iterable<DataSnapshot> arrLight = postSnapshot.child("light").getChildren();
                         Iterable<DataSnapshot> arrNoise = postSnapshot.child("noise").getChildren();
@@ -156,23 +151,17 @@ public class BackendServices extends Activity {
                 restaurantRef.child(place.getName()).child("latitude").setValue(place.getLatitude());
                 restaurantRef.child(place.getName()).child("longitude").setValue(place.getLongitude());
                 restaurantRef.child(place.getName()).child("name").setValue(place.getName());
-//                restaurantRef.child(place.getName()).child("rating").setValue(place);
                 String urlGetPlaceId = null;
                 try {
                     urlGetPlaceId = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input="+ URLEncoder.encode(place.getName(), "UTF-8")+ "&inputtype=textquery&key=" + mContext.getResources().getString(R.string.google_maps_key);
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
-                Log.i("StringValue", urlGetPlaceId);
+//                Log.i("StringValue", urlGetPlaceId);
                 httpRequest(place, urlGetPlaceId);
             }
         }
     }
-
-//    private void getPhoto(Place place) {
-//        String urlPlaceId = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input="+place.getName()+ "&inputtype=textquery&key=" + mContext.getResources().getString(R.string.google_maps_key);
-//        Log.i("Place" + httpRequest(urlPlaceId));
-//    }
 
     private void httpRequest(final Place place, String urlString) {
         RequestQueue queue = Volley.newRequestQueue(mContext);
@@ -181,35 +170,35 @@ public class BackendServices extends Activity {
                 {
                     @Override
                     public void onResponse(JSONObject response) {
-                        Log.d("StringValue", response.toString());
+//                        Log.d("StringValue", response.toString());
                         try {
                             final String placeId = ((JSONObject)((JSONArray) response.get("candidates")).get(0)).getString("place_id");
-                            Log.i("StringValue", "----------------------------\n\n");
-                            Log.i("StringValue", placeId);
+//                            Log.i("StringValue", "----------------------------\n\n");
+//                            Log.i("StringValue", placeId);
 
                             final String urlPhotoReferenceRating = "https://maps.googleapis.com/maps/api/place/details/json?place_id="+placeId+"&key="+ mContext.getResources().getString(R.string.google_maps_key);
-                            Log.d("StringValue------", urlPhotoReferenceRating);
+//                            Log.d("StringValue------", urlPhotoReferenceRating);
                             RequestQueue queuePhotoRating = Volley.newRequestQueue(mContext);
                             JsonObjectRequest getRequestPhoto = new JsonObjectRequest(Request.Method.GET, urlPhotoReferenceRating, null,
                                     new Response.Listener<JSONObject>()
                                     {
                                         @Override
                                         public void onResponse(JSONObject response) {
-                                            Log.d("StringValue------", response.toString());
+//                                            Log.d("StringValue------", response.toString());
                                             try {
-                                                Log.i("StringValueRating", urlPhotoReferenceRating);
+//                                                Log.i("StringValueRating", urlPhotoReferenceRating);
                                                 String rating = ((JSONObject) response.getJSONObject("result")).getString("rating");
-                                                Log.i("StringValueRating", rating);
+//                                                Log.i("StringValueRating", rating);
                                                 restaurantRef.child(place.getName()).child("rating").setValue(rating);
 
 
                                                 String photoReference = ((JSONObject)((JSONObject) response.getJSONObject("result")).getJSONArray("photos").get(0)).getString("photo_reference");
 
-                                                Log.i("StringValuePhoto", photoReference);
+//                                                Log.i("StringValuePhoto", photoReference);
 
 //        ---------------------------------------------------------------------------------
                                                 final String urlPhoto = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=500&maxheight=500&photoreference="+photoReference+"&key="+mContext.getResources().getString(R.string.google_maps_key);
-                                                Log.d("StringValue------", urlPhoto);
+//                                                Log.d("StringValue------", urlPhoto);
                                                 RequestQueue queuePhoto = Volley.newRequestQueue(mContext);
                                                 ImageRequest getRequestPhoto = new ImageRequest(urlPhoto, new Response.Listener<Bitmap>() {
                                                     @Override
@@ -224,12 +213,12 @@ public class BackendServices extends Activity {
                                                         uploadTask.addOnFailureListener(new OnFailureListener() {
                                                             @Override
                                                             public void onFailure(@NonNull Exception exception) {
-                                                                Log.i("StringValue++++++++++++", exception.toString());
+//                                                                Log.i("StringValue++++++++++++", exception.toString());
                                                             }
                                                         }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                                                             @Override
                                                             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                                                                Log.i("StringValue++++++++++++", "done");
+//                                                                Log.i("StringValue++++++++++++", "done");
                                                             }
                                                         });
                                                     }
@@ -251,7 +240,7 @@ public class BackendServices extends Activity {
                                     {
                                         @Override
                                         public void onErrorResponse(VolleyError error) {
-                                            Log.d("Error.Response", error.toString());
+//                                            Log.d("Error.Response", error.toString());
                                         }
                                     }
                             );
@@ -268,7 +257,7 @@ public class BackendServices extends Activity {
                 {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.d("Error.Response", error.toString());
+//                        Log.d("Error.Response", error.toString());
                     }
                 }
         );
@@ -293,7 +282,7 @@ public class BackendServices extends Activity {
     }
 
     public List<RestaurantWithTimestamp> getAllRestaurantDetailsForRecommendation() {
-        Log.i("all-details", "called");
+//        Log.i("all-details", "called");
         listCompleted = false;
         restaurantRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -307,9 +296,9 @@ public class BackendServices extends Activity {
                 List<String> arrNames = new ArrayList<>();
                 SensorModel sensorModel;
 
-                Log.i("time--11", "0");
+//                Log.i("time--11", "0");
                 for (DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
-                    Log.i("time--00", "0");
+//                    Log.i("time--00", "0");
 //                    Log.i("Object--", String.valueOf(postSnapshot.child("light")));
                     String nameSensor = postSnapshot.child("name").getValue().toString();
                     arrLightWithTimeStamp = postSnapshot.child("light").getChildren();
@@ -317,9 +306,8 @@ public class BackendServices extends Activity {
                     arrNames.add(postSnapshot.child("name").getValue().toString());
 
 
-
                     while (arrLightWithTimeStamp.iterator().hasNext()) {
-                        Log.i("time--==", "0");
+//                        Log.i("time--==", "0");
                         DataSnapshot snapshotLight = arrLightWithTimeStamp.iterator().next();
 //                        Log.i("timestamp--", String.valueOf(snapshotLight.child("timeStamp").getValue()));
                         SensorModel lightTemp = new SensorModel(
@@ -331,7 +319,7 @@ public class BackendServices extends Activity {
                         sensorModelsForLight.add(lightTemp);
                     }
                     while (arrNoiseWithTimeStamp.iterator().hasNext()) {
-                        Log.i("time----", "0");
+//                        Log.i("time----", "0");
                         DataSnapshot snapshotLight = arrNoiseWithTimeStamp.iterator().next();
                         SensorModel noiseTemp = new SensorModel(
                                 nameSensor,
@@ -341,14 +329,6 @@ public class BackendServices extends Activity {
                         );
                         sensorModelsForNoise.add(noiseTemp);
                     }
-//                    while (restaurantWithTimestampList.iterator().hasNext()) {
-//                        RestaurantWithTimestamp currentRestTimestamp = restaurantWithTimestampList.iterator().next();
-////                        Log.i("time", String.valueOf(currentRestTimestamp.getLight()));
-//                        for (SensorModel senModel: currentRestTimestamp.getLight()) {
-//                            Log.i("time----", String.valueOf(senModel.getTimestamp()));
-//                        }
-//
-//                    }
                     RestaurantWithTimestamp restTime = new RestaurantWithTimestamp(
                         postSnapshot.getKey(),
                         sensorModelsForNoise,
@@ -358,35 +338,21 @@ public class BackendServices extends Activity {
                         Float.parseFloat(postSnapshot.child("latitude").getValue().toString())
                     );
                     restaurantWithTimestampList.add(restTime);
-                    Log.i("time--++", "1");
+//                    Log.i("time--++", "1");
                 }
                 listCompleted = true;
-                Log.i("time--++--", "1");
+//                Log.i("time--++--", "1");
             }
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-                Log.i("time--1---1", "0");
+//                Log.i("time--1---1", "0");
             }
         });
         while (!listCompleted) {
         }
-        Log.i("time--++returning", "1");
+//        Log.i("time--++returning", "1");
         return restaurantWithTimestampList;
 
     }
-
-//    public Bitmap getImage(Place place) {
-//        storage.getReference().child(place.getName()).getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
-//            @Override
-//            public void onSuccess(Uri uri) {
-//                Log.i("StringValue=-=-", "done");
-//            }
-//        }).addOnFailureListener(new OnFailureListener() {
-//            @Override
-//            public void onFailure(@NonNull Exception e) {
-//                Log.i("StringValue=-=-", e.toString());
-//            }
-//        });
-//    }
 
 }

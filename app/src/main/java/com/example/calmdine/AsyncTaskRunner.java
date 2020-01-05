@@ -1,74 +1,26 @@
 package com.example.calmdine;
 
-import android.Manifest;
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.IntentSender;
-import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
-import android.location.LocationListener;
-import android.media.AudioFormat;
 import android.media.AudioRecord;
-import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.AsyncTask;
-import android.os.Build;
-import android.os.Bundle;
 import android.util.Log;
-import android.widget.Toast;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.FragmentActivity;
-
-import com.example.calmdine.Interface.OnCheckingTaskCompleted;
-import com.example.calmdine.Interface.OnRetrievingTaskCompleted;
-import com.example.calmdine.Restaurant.CheckNearbyPlaceExistence;
-import com.example.calmdine.Restaurant.GetNearbyPlacesData;
-import com.example.calmdine.Restaurant.GetNearestPlaceData;
 import com.example.calmdine.ServicesFire.BackendServices;
 import com.example.calmdine.models.Place;
 import com.example.calmdine.models.Restaurant;
 import com.example.calmdine.models.SensorModel;
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResult;
-import com.google.android.gms.location.LocationSettingsStatusCodes;
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-
 import java.io.IOException;
-import java.sql.Date;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 
 import static java.lang.Math.exp;
 
@@ -94,8 +46,6 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
     BackendServices backendServices;
 
 
-    private GoogleMap mMap;
-    private GoogleApiClient mGoogleApiClient;
     private double currentLatitude, currentLongitude;
     private Location deviceLocation;
     private Place nearestPlace;
@@ -178,17 +128,15 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
 
 //    -------------------------------------------------
 
-
     @Override
     protected Void doInBackground(Void... voids) {
-//        getDeviceLocation();
         while (true) {
             try {
                 Thread.sleep(5000);
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                Log.i("background", "result");
+//                Log.i("background", "result");
                 try {
                     start();
                 } catch (Exception ex) {
@@ -196,7 +144,7 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
                 } finally {
 //                    stop();
                     double noiseValue = soundDb();
-                    Log.i("Amplitude", String.valueOf(noiseValue));
+//                    Log.i("Amplitude", String.valueOf(noiseValue));
                 }
 //                Log.i("Amplitude", String.valueOf(getAmplitude()));
                 sensorManager.registerListener(this, lightSensor, samplingRate);
@@ -222,7 +170,7 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
     public void onSensorChanged(SensorEvent sensorEvent) {
         if (intervalTime > 0) {
             lightSensorValues.add(Double.valueOf(sensorEvent.values[0]));
-            Log.i("light----------------", String.valueOf(sensorEvent.values[0]));
+//            Log.i("light----------------", String.valueOf(sensorEvent.values[0]));
             intervalTime--;
         }
         System.out.println(lightSensorValues);
@@ -232,9 +180,8 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
                 sum += lightValSum;
             }
             avgLight = sum/lightSensorValues.size();
-            Log.i("light------++++--------", String.valueOf(avgLight));
-            Log.i("list", String.valueOf(restaurantsList.size()));
-
+//            Log.i("light------++++--------", String.valueOf(avgLight));
+//            Log.i("list", String.valueOf(restaurantsList.size()));
             intervalTime = 10;
             lightSensorValues.clear();
         }
