@@ -22,6 +22,7 @@ public class GetNearbyPlacesData extends AsyncTask<Object, String, String> {
 
     @Override
     protected String doInBackground(Object... objects) {
+        Log.d(TAG, "doInBackground: HomeActivity: GetNearbyPlaces: Background");
         googleMap = (GoogleMap) objects[0];
         url = (String) objects[1];
 
@@ -53,6 +54,7 @@ public class GetNearbyPlacesData extends AsyncTask<Object, String, String> {
 
                 JSONObject nameObject = resultArray.getJSONObject(i);
                 String name = nameObject.getString("name");
+//                Log.d(TAG, "HomeActivity: onPostExecute: " + name);
 
                 LatLng latLng = new LatLng(Double.parseDouble(latitude), Double.parseDouble(longitude));
 

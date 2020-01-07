@@ -131,6 +131,9 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
     @Override
     protected Void doInBackground(Void... voids) {
         while (true) {
+            if (isCancelled()) {
+                break;
+            }
             try {
                 Thread.sleep(5000);
             } catch (Exception e) {
@@ -164,6 +167,7 @@ public class AsyncTaskRunner extends AsyncTask<Void, Void, Void> implements Sens
                     }
             }
         }
+        return null;
     }
 
     @Override

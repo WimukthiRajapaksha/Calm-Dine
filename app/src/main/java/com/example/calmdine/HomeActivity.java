@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -100,7 +101,9 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
     private double currentLatitude, currentLongitude;
     private Location deviceLocation;
     private Place nearestPlace;
+    private String lastPlace = "";
     private boolean isNearRestaurant;
+    AsyncTaskRunner asyncTaskRunner;
 
     private final static String TAG = "HomeActivity";
     private final static int REQUEST_CHECK_SETTINGS_GPS = 0x1;
@@ -231,8 +234,11 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void startBackgroundProcess(Place place) {
         if(mMicrophonePermissionGranted && mCoarseLocationPermissionGranted && mFineLocationPermissionGranted) {
-            AsyncTaskRunner asyncTaskRunner = new AsyncTaskRunner(sensorManager, mContext, place);
-            asyncTaskRunner.execute();
+            if (asyncTaskRunner != null) {
+                asyncTaskRunner.cancel(true);
+            }
+            asyncTaskRunner = new AsyncTaskRunner(sensorManager, mContext, place);
+            asyncTaskRunner.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
     }
 
@@ -269,7 +275,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void getNearbyRestaurants() {
-//        Log.d(TAG, "getNearbyRestaurants: getting nearby restaurants");
+        Log.d(TAG, "getNearbyRestaurants: initializing");
         StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
         stringBuilder.append("location=" + currentLatitude + "," + currentLongitude);
         stringBuilder.append("&radius=1000");
@@ -281,9 +287,8 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         Object dataTransfer[] = new Object[2];
         dataTransfer[0] = mMap;
         dataTransfer[1] = url;
-
         GetNearbyPlacesData getNearbyPlacesData = new GetNearbyPlacesData();
-        getNearbyPlacesData.execute(dataTransfer);
+        getNearbyPlacesData.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, dataTransfer);
     }
 
     private void getNearestRestaurant() {
@@ -300,40 +305,48 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         dataTransfer[1] = url;
 
         GetNearestPlaceData getNearestPlaceData = new GetNearestPlaceData(this);
-        getNearestPlaceData.execute(dataTransfer);
+        getNearestPlaceData.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, dataTransfer);
+//        Log.d(TAG, "onLocationChanged----: initializing");
     }
 
     // To get the returning nearest restaurant value from the GetNearestPlaceData (AsyncTasks)
     @Override
     public void onRetrievingTaskCompleted(Place place) {
         nearestPlace = place;
-//        Log.d(TAG, "onRetrievingTaskCompleted: Nearest Restaurant Name: " + nearestPlace.getName());
+        Log.d(TAG, "onRetrievingTaskCompleted: Nearest Restaurant Name: " + nearestPlace.getName());
 
-        DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                switch (which){
-                    case DialogInterface.BUTTON_POSITIVE:
-                        //Yes button clicked
-                        startBackgroundProcess(nearestPlace);
-                        break;
+        if(!nearestPlace.getName().equals(lastPlace)) {
+            DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    switch (which) {
+                        case DialogInterface.BUTTON_POSITIVE:
+                            //Yes button clicked
+                            lastPlace = nearestPlace.getName();
+                            startBackgroundProcess(nearestPlace);
+                            break;
 
-                    case DialogInterface.BUTTON_NEGATIVE:
-                        //No button clicked
-//                        Log.i("Clicked----", "here");
-                        break;
+                        case DialogInterface.BUTTON_NEGATIVE:
+                            if (asyncTaskRunner != null) {
+                                asyncTaskRunner.cancel(true);
+                            }
+                            //No button clicked
+                            //                        Log.i("Clicked----", "here");
+                            break;
+                    }
                 }
-            }
-        };
+            };
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(HomeActivity.this);
-        builder.setMessage("Are you in " + nearestPlace.getName() + "?").setPositiveButton("Yes", dialogClickListener).setNegativeButton("No", dialogClickListener).show();
+            AlertDialog.Builder builder = new AlertDialog.Builder(HomeActivity.this);
+            builder.setMessage("Are you at " + nearestPlace.getName() + "?").setPositiveButton("Yes", dialogClickListener).setNegativeButton("No", dialogClickListener).show();
 
 //      Adding a push message asking whether the customer in a particular restaurant
 //      If so, starting the background process to store light and noise values.
+        }
     }
 
     private void isDeviceNearbyRestaurant(){
+        Log.d(TAG, "isDeviceNearbyRestaurant: initializing");
         StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
         stringBuilder.append("location=" + currentLatitude + "," + currentLongitude);
         stringBuilder.append("&radius=50");
@@ -347,7 +360,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         dataTransfer[1] = url;
 
         CheckNearbyPlaceExistence checkNearbyPlaceExistence = new CheckNearbyPlaceExistence(this);
-        checkNearbyPlaceExistence.execute(dataTransfer);
+        checkNearbyPlaceExistence.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, dataTransfer);
     }
 
     // To get the boolean value to check the existence of a restaurant within the device area
@@ -360,11 +373,16 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         if(isNearRestaurant) {
             getNearestRestaurant();
         } else {
+            if (asyncTaskRunner != null) {
+                asyncTaskRunner.cancel(true);
+            }
 //            Log.d(TAG, "onCheckingTaskCompleted: Device is not in a Restaurant");
         }
     }
 
     private void getDeviceLocation() {
+        Log.d(TAG, "getDeviceLocation: initializing");
+
         if(mGoogleApiClient != null) {
 //            Log.i("Here", "1");
 //            Log.i("Here", mGoogleApiClient.toString());
@@ -376,8 +394,9 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
                     LocationRequest locationRequest = new LocationRequest();
 
                     //Refreshing location in every 10 seconds
-                    locationRequest.setInterval(10000);
-                    locationRequest.setFastestInterval(10000);
+                    locationRequest.setInterval(15000);
+                    locationRequest.setFastestInterval(15000);
+                    Log.d(TAG, "getDeviceLocation: device location request");
 
                     locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
                     LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(locationRequest);
@@ -401,6 +420,8 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
 
                                         deviceLocation = LocationServices.FusedLocationApi
                                                 .getLastLocation(mGoogleApiClient);
+
+//                                        getNearestRestaurant();
 
 
                                     }

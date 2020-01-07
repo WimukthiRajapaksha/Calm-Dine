@@ -105,7 +105,7 @@ public class RecommendationActivity extends AppCompatActivity {
 
         loadRestaurantData();
 
-        final String urlRestaurants = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + locationDataLat + "," + locationDataLong + "&radius=1000&type=restaurant&key=" + getResources().getString(R.string.google_maps_key);
+        final String urlRestaurants = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + locationDataLat + "," + locationDataLong + "&radius=3000&type=restaurant&key=" + getResources().getString(R.string.google_maps_key);
         RequestQueue queueRestaurants = Volley.newRequestQueue(RecommendationActivity.this);
 
         JsonObjectRequest getRequest = new JsonObjectRequest(Request.Method.GET, urlRestaurants, null,
@@ -279,9 +279,14 @@ public class RecommendationActivity extends AppCompatActivity {
     public void onFilterChanged(int noise, int light) {
         restaurantsForUi.clear();
 //        Log.i("Size--", noise + " " + light);
-//        Log.i("Size--", String.valueOf(restaurantWithTimestampList.size()));
-//        Log.d("Response_01-05", String.valueOf(nearbyRestaurantsList.size()));
+        Log.i("Response_01-05-10", String.valueOf(restaurantWithTimestampList.size()));
+        Log.d("Response_01-05", String.valueOf(nearbyRestaurantsList.size()));
+        for (String resta: nearbyRestaurantsList) {
+            Log.i("Response_01-05-----", resta);
+        }
         for (RestaurantWithTimestamp restaurant: restaurantWithTimestampList) {
+            Log.i("Response_01-05-----", restaurant.getName());
+            Log.i("Response_01-05+++++++", String.valueOf(nearbyRestaurantsList.indexOf(restaurant.getName())));
             if (nearbyRestaurantsList.indexOf(restaurant.getName()) != -1) {
 //                Log.i("size-----", restaurant.getName());
 //                Log.i("size-----", String.valueOf(restaurant.getRating()));

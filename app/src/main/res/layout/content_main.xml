@@ -12,7 +12,7 @@
     <androidx.cardview.widget.CardView
         android:id="@+id/cardView"
         android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_height="120dp"
         android:layout_marginTop="0dp"
         android:layout_marginBottom="257dp"
         app:cardBackgroundColor="@color/design_default_color_primary"
@@ -51,7 +51,8 @@
         android:id="@+id/linearLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="110dp"
+        android:layout_marginTop="80dp"
+        android:paddingTop="50dp"
         android:background="@raw/login"
         android:orientation="vertical"
         android:scaleType="fitXY"
@@ -107,6 +108,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center"
+            android:paddingTop="10dp"
             android:orientation="horizontal">
 
             <TextView
@@ -115,6 +117,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:layout_weight="1"
+                android:textColor="@color/white"
                 android:textStyle="bold"
                 android:text="@string/noAccount"
                 android:textAlignment="textEnd" />
