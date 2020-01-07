@@ -33,7 +33,7 @@
         <TextView
             android:id="@+id/txtRestaurantName"
             android:gravity="center_horizontal"
-            android:textSize="20sp"
+            android:textSize="17sp"
             android:textStyle="italic|bold"
             android:layout_marginTop="2dp"
             android:layout_width="match_parent"
