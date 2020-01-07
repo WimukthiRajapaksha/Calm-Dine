@@ -428,7 +428,7 @@ public class RecommendationActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onBackPressed() {tu
+    public void onBackPressed() {
         super.onBackPressed();
     }
 }
