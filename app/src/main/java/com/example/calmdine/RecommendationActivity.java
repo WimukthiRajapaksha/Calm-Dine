@@ -429,9 +429,10 @@ public class RecommendationActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        Intent setIntent = new Intent(this, HomeActivity.class);
+//        Intent setIntent = new Intent(this, HomeActivity.class);
 //        Log.i("Intent---", "Here");
-        startActivity(setIntent);
-        finish();
+//        startActivity(setIntent);
+//        finish();
+        super.onBackPressed();
     }
 }
